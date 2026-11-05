@@ -1,9 +1,9 @@
 plugins { id 'com.android.application' }
 android {
-    namespace 'com.mascot a.racha'.replace(' ','')
+    namespace 'com.mascotaracha
     compileSdk 35
     defaultConfig {
-        applicationId 'com.mascot aracha'.replace(' ','')
+        applicationId 'com.mascotaracha
         minSdk 23
         targetSdk 28
         versionCode 1
