@@ -42,6 +42,13 @@ public class MainActivity extends Activity {
     section("🐾 Elige tu mascota");
     LinearLayout choices=new LinearLayout(this);
     for(String p:new String[]{"Perrito","Gatito","Conejito","Pandita"}){Button b=btn(p);choices.addView(b,new LinearLayout.LayoutParams(0,dp(48),1));b.setOnClickListener(v->{put("pet",p);renderer.setPet(p);refresh();});}root.addView(choices);
+    section("💖 Cuida a tu mascota");
+    LinearLayout care=new LinearLayout(this);
+    String[] careNames={"🍖 Dar comida","🎾 Jugar","🛁 Bañar"};
+    String[] careKeys={"food","fun","clean"};
+    for(int i=0;i<careNames.length;i++){final String key=careKeys[i];Button action=btn(careNames[i]);care.addView(action,new LinearLayout.LayoutParams(0,dp(50),1));action.setOnClickListener(v->care(key));}
+    root.addView(care);
+    TextView careStats=txt("🍗 Hambre   🎾 Diversión   🫧 Limpieza",13,false);root.addView(careStats);
     section("🔥 Tu racha diaria");TextView streak=txt("Completa misiones para mantener tu racha",15,true);root.addView(streak);
     section("🎯 Misiones de hoy");missionText=txt("",17,true);root.addView(missionText);
     missionBox=new LinearLayout(this);missionBox.setOrientation(1);root.addView(missionBox);
@@ -55,7 +62,8 @@ public class MainActivity extends Activity {
   void section(String s){TextView t=txt(s,19,true);t.setPadding(4,dp(16),4,dp(5));root.addView(t);}
   Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(Color.WHITE);b.setTextSize(13);b.setAllCaps(false);b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(139,92,246)));return b;}
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
-  void refresh(){if(stats==null)return;stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas");missionText.setText("Hoy: "+missions[missionIndex]);renderer.setPet(pet());}
+  void refresh(){if(stats==null)return;stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas    ❤️ "+state.optInt("fun",75)+"%");missionText.setText("Hoy: "+missions[missionIndex]);renderer.setPet(pet());}
+  void care(String key){int value=Math.min(100,state.optInt(key,55)+25);put(key,value);renderer.pet();String msg=key.equals("food")?"¡Qué rico! Tu mascota comió 🍖":key.equals("fun")?"¡Se divirtieron muchísimo! 🎾":"¡Quedó limpita y feliz! 🫧";toast(msg);refresh();}
   void completeMission(){String today=day();if(state.optString("done","").equals(today)){toast("¡Ya completaste la misión de hoy!");return;}String last=state.optString("last","");int streak=last.equals(yesterday())?num("streak")+1:1;put("streak",streak);put("coins",num("coins")+10);put("last",today);put("done",today);refresh();toast("¡Muy bien! +10 monedas y racha de "+streak+" días 🔥");}
   String yesterday(){Calendar c=Calendar.getInstance();c.add(Calendar.DATE,-1);return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.getTime());}
   void buy(int i){int cost=20+i*10;if(num("coins")<cost){toast("Te faltan monedas. Completa misiones ❤️");return;}put("coins",num("coins")-cost);put("outfit",clothes[i]);renderer.setOutfit(i);refresh();toast("¡Tu mascota estrenó "+clothes[i]+"!");}
@@ -76,14 +84,14 @@ public class MainActivity extends Activity {
     int shader(int type,String s){int x=GLES20.glCreateShader(type);GLES20.glShaderSource(x,s);GLES20.glCompileShader(x);return x;}
     public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);Matrix.frustumM(projection,0,-(float)w/h,(float)w/h,-1,1,2,20);Matrix.setLookAtM(view,0,0,0,7,0,0,0,0,1,0);}
     public void onDrawFrame(GL10 g){GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glEnable(GLES20.GL_DEPTH_TEST);angle+=.35f;bounce=(float)Math.sin(System.currentTimeMillis()/280.0)*.08f+(touched?.22f:0);touched=false;
-      draw(0,-.55f,0,1.0f,.9f,.65f,.75f,.48f,.42f);draw(0,.48f,0,1.0f,.56f,.56f,.55f,.48f,.44f);
-      float ear=animal.equals("Conejito")?.42f:.22f;draw(-.42f,1.0f,0,1,.22f,ear,.16f,.13f,.12f);draw(.42f,1.0f,0,1,.22f,ear,.16f,.13f,.12f);
+      float cr=animal.equals("Pandita")?.12f:animal.equals("Gatito")?.88f:animal.equals("Conejito")?.82f:.75f;float cg=animal.equals("Pandita")?.12f:animal.equals("Gatito")?.62f:animal.equals("Conejito")?.68f:.48f;float cb=animal.equals("Pandita")?.14f:animal.equals("Gatito")?.38f:animal.equals("Conejito")?.82f:.42f;draw(0,-.55f,0,1.0f,.9f,.65f,cr,cg,cb);draw(0,.48f,0,1.0f,.56f,.56f,cr,cg,cb);
+      float ear=animal.equals("Conejito")?.62f:animal.equals("Gatito")?.32f:.22f;float er=animal.equals("Pandita")?.08f:.16f;draw(-.42f,1.0f,0,1,.22f,ear,er,.08f,.09f);draw(.42f,1.0f,0,1,.22f,ear,er,.08f,.09f);
       draw(-.2f,.55f,.4f,1,.09f,.12f,.05f,.03f,.04f);draw(.2f,.55f,.4f,1,.09f,.12f,.05f,.03f,.04f);
       draw(0,.28f,.43f,1,.12f,.07f,.05f,.06f,.03f);
       draw(-.52f,-.95f,0,1,.22f,.24f,.22f,.72f,.48f);draw(.52f,-.95f,0,1,.22f,.24f,.22f,.72f,.48f);
       if(outfit>=0)draw(0,-.45f,.5f,1,.52f,.28f,.1f,1,.72f);
     }
-    void draw(float x,float y,float z,float sx,float sy,float sz,float r,float gr,float b){Matrix.setIdentityM(model,0);Matrix.translateM(model,0,x,y+bounce,z);Matrix.rotateM(model,0,angle*.08f,0,1,0);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(mvp,0,view,0,model,0);Matrix.multiplyMM(mvp,0,projection,0,mvp,0);GLES20.glUseProgram(program);GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program,"m"),1,false,mvp,0);GLES20.glUniform4f(color,r,gr,b,1);GLES20.glEnableVertexAttribArray(pos);vertices.position(0);GLES20.glVertexAttribPointer(pos,3,GLES20.GL_FLOAT,false,0,vertices);GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,0,18*2*25);GLES20.glDisableVertexAttribArray(pos);}
+    void draw(float x,float y,float z,float sx,float sy,float sz,float r,float gr,float b){Matrix.setIdentityM(model,0);Matrix.translateM(model,0,x,y+bounce,z);Matrix.rotateM(model,0,angle*.08f,0,1,0);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(mvp,0,view,0,model,0);Matrix.multiplyMM(mvp,0,projection,0,mvp,0);GLES20.glUseProgram(program);GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program,"m"),1,false,mvp,0);GLES20.glUniform4f(color,r,gr,b,1);GLES20.glEnableVertexAttribArray(pos);vertices.position(0);GLES20.glVertexAttribPointer(pos,3,GLES20.GL_FLOAT,false,0,vertices);for(int strip=0;strip<18;strip++)GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,strip*50,50);GLES20.glDisableVertexAttribArray(pos);}
     void pet(){touched=true;}void setPet(String p){animal=p;}void setOutfit(int i){outfit=i;}
   }
 }
