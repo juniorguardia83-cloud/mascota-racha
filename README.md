@@ -1,0 +1,2 @@
+# mascota-racha
+Para chatgpt
