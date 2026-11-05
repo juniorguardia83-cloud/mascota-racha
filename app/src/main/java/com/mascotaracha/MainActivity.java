@@ -1,4 +1,4 @@
-package com.mascot aracha;
+package com.mascotaracha;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebChromeClient;
@@ -17,5 +17,4 @@ public class MainActivity extends Activity {
   web.loadUrl("file:///android_asset/index.html");
   setContentView(web);
  }
- @Override public void onBackPressed(){ setContentView(findViewById(android.R.id.content)); super.onBackPressed(); }
 }
