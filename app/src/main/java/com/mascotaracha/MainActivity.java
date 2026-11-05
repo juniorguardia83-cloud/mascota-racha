@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
       draw(-.2f,.55f,.4f,1,.09f,.12f,.05f,.03f,.04f);draw(.2f,.55f,.4f,1,.09f,.12f,.05f,.03f,.04f);
       draw(0,.28f,.43f,1,.12f,.07f,.05f,.06f,.03f);
       draw(-.52f,-.95f,0,1,.22f,.24f,.22f,.72f,.48f);draw(.52f,-.95f,0,1,.22f,.24f,.22f,.72f,.48f);
-      if(outfit>=0)draw(0,-.45f,.5f,1,.52f,.28f,.1f,1,.72f,.2f);
+      if(outfit>=0)draw(0,-.45f,.5f,1,.52f,.28f,.1f,1,.72f);
     }
     void draw(float x,float y,float z,float sx,float sy,float sz,float r,float gr,float b){Matrix.setIdentityM(model,0);Matrix.translateM(model,0,x,y+bounce,z);Matrix.rotateM(model,0,angle*.08f,0,1,0);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(mvp,0,view,0,model,0);Matrix.multiplyMM(mvp,0,projection,0,mvp,0);GLES20.glUseProgram(program);GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program,"m"),1,false,mvp,0);GLES20.glUniform4f(color,r,gr,b,1);GLES20.glEnableVertexAttribArray(pos);vertices.position(0);GLES20.glVertexAttribPointer(pos,3,GLES20.GL_FLOAT,false,0,vertices);GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,0,18*2*25);GLES20.glDisableVertexAttribArray(pos);}
     void pet(){touched=true;}void setPet(String p){animal=p;}void setOutfit(int i){outfit=i;}
