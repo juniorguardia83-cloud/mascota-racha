@@ -1,9 +1,13 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+}
+
 android {
-    namespace 'com.mascotaracha
+    namespace 'com.mascotaracha'
     compileSdk 35
+
     defaultConfig {
-        applicationId 'com.mascotaracha
+        applicationId 'com.mascotaracha'
         minSdk 23
         targetSdk 28
         versionCode 1
