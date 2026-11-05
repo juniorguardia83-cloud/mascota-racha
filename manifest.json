@@ -1,0 +1,10 @@
+{
+  "name": "Mascota Racha",
+  "short_name": "Mascota Racha",
+  "description": "Cuida a tu mascota y mantén tu racha diaria.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2ff",
+  "theme_color": "#8b5cf6"
+}
