@@ -127,8 +127,22 @@ public class MainActivity extends Activity {
   void sharePet(){String message="¡Mira a mi "+pet()+" en MimoPets! 🔥 Llevo "+num("streak")+" días de racha y tengo "+num("coins")+" monedas. 🐾";
     Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,message+" https://github.com/juniorguardia83-cloud/mascota-racha");startActivity(Intent.createChooser(send,"Compartir mi mascota"));}
 
-  void care(String key){int value=Math.min(100,state.optInt(key,55)+25);put(key,value);petView.pet();String msg=key.equals("food")?"¡Qué rico! Tu mascota comió 🍖":key.equals("fun")?"¡Se divirtieron muchísimo! 🎾":"¡Quedó limpita y feliz! 🫧";toast(msg);refresh();}
-  void completeMission(){String today=day();if(state.optString("done","").equals(today)){toast("¡Ya completaste la misión de hoy!");return;}String last=state.optString("last","");int streak=last.equals(yesterday())?num("streak")+1:1;put("streak",streak);put("weekProgress",Math.min(7,state.optInt("weekProgress",0)+1));put("coins",num("coins")+10);put("last",today);put("done",today);refresh();toast("¡Muy bien! +10 monedas y racha de "+streak+" días 🔥");}
+  void care(String key){
+    int value=Math.min(100,state.optInt(key,55)+25);
+    try{state.put(key,value);int xp=state.optInt("xp",0)+8;int level=Math.max(1,state.optInt("level",1));if(xp>=100){xp-=100;level++;state.put("coins",num("coins")+25);toast("¡Subiste al nivel "+level+"! +25 monedas ⭐");}state.put("xp",xp);state.put("level",level);}catch(Exception e){}
+    save();if(petView!=null)petView.pet();
+    String msg=key.equals("food")?"¡Qué rico! Tu mascota comió 🍖":key.equals("fun")?"¡Se divirtieron muchísimo! 🎾":key.equals("clean")?"¡Quedó limpita y feliz! 🫧":"¡Descansó y recuperó energía! 🌙";
+    toast(msg+"  +8 XP");refresh();
+  }
+  void completeMission(){
+    String today=day();if(state.optString("done","").equals(today)){toast("¡Ya completaste la misión de hoy!");return;}
+    String last=state.optString("last","");int streak=last.equals(yesterday())?num("streak")+1:1;
+    int progress=state.optInt("weekProgress",0)+1;int coins=num("coins")+10;String reward="";
+    if(progress>=7){coins+=100;progress=0;reward=" ¡Premio semanal: +100 monedas! 🎁";}
+    int xp=state.optInt("xp",0)+20;int level=Math.max(1,state.optInt("level",1));if(xp>=100){xp-=100;level++;coins+=25;reward+=" ¡Subiste al nivel "+level+"! ⭐";}
+    try{state.put("streak",streak);state.put("weekProgress",progress);state.put("coins",coins);state.put("last",today);state.put("done",today);state.put("xp",xp);state.put("level",level);}catch(Exception e){}
+    save();refresh();toast("¡Misión completada! +10 monedas · +20 XP."+reward);
+  }
   String yesterday(){Calendar c=Calendar.getInstance();c.add(Calendar.DATE,-1);return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.getTime());}
   void buy(int i){JSONArray owned=state.optJSONArray("owned");if(owned==null)owned=new JSONArray();for(int x=0;x<owned.length();x++)if(owned.optInt(x)==i){toast("¡Ya lo tienes! Está en tu mochila 🎒");return;}
     int cost=prices[i];if(num("coins")<cost){toast("Te faltan monedas. Completa misiones ❤️");return;}
