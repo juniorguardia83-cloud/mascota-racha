@@ -12,15 +12,21 @@ public class PetView extends View {
   private final Paint p=new Paint(3);
   private String animal="Perrito";
   private int outfit=-1;
+  private int room=0;
   private long started=System.currentTimeMillis();
   public PetView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);}
   public void setPet(String value){animal=value;invalidate();}
   public void setOutfit(int value){outfit=value;invalidate();}
+  public void setRoom(int value){room=value;invalidate();}
   public void pet(){started=System.currentTimeMillis();invalidate();}
+  private float dp(float v){return v*getResources().getDisplayMetrics().density;}
   private void circle(Canvas c,float x,float y,float r,int color){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawCircle(x,y,r,p);}
   private void oval(Canvas c,float l,float t,float r,float b,int color){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawOval(new RectF(l,t,r,b),p);}
   @Override protected void onDraw(Canvas canvas){
-    super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.drawColor(Color.rgb(249,232,255));
+    super.onDraw(canvas);float w=getWidth(),h=getHeight();
+    int bg=room==1?0xFFFFE8F0:room==2?0xFFE8F2FF:room==3?0xFFE2FAF5:0xFFFFF0D8;canvas.drawColor(bg);
+    p.setColor(0x22FFFFFF);p.setStyle(Paint.Style.FILL);canvas.drawCircle(w*.18f,h*.18f,dp(42),p);canvas.drawCircle(w*.82f,h*.25f,dp(52),p);
+    p.setColor(0x337A547F);canvas.drawRect(0,h*.82f,w,h,p);
     canvas.save();canvas.translate(w/2f,h*.54f);float s=Math.min(w/260f,h/250f);canvas.scale(s,s);
     float bounce=(float)Math.sin((System.currentTimeMillis()-started)/180.0)*3;
     int fur=animal.equals("Pandita")?Color.rgb(45,42,48):animal.equals("Gatito")?Color.rgb(245,177,205):animal.equals("Conejito")?Color.rgb(238,224,207):Color.rgb(207,151,105);
@@ -44,6 +50,14 @@ public class PetView extends View {
     else if(outfit==1){p.setColor(0xFFFFD34D);p.setStyle(Paint.Style.FILL);PathHelper.star(canvas,p,0,-118+bounce,22);}
     else if(outfit==2){oval(canvas,-45,-57+bounce,-5,-37+bounce,Color.BLACK);oval(canvas,5,-57+bounce,45,-37+bounce,Color.BLACK);p.setColor(Color.BLACK);p.setStrokeWidth(5);canvas.drawLine(-8,-48+bounce,8,-48+bounce,p);}
     else if(outfit==3){oval(canvas,-37,-2+bounce,37,15+bounce,0xFF8BC8F0);}
+    else if(outfit==4){circle(canvas,0,-110+bounce,18,0xFFFF8FB5);circle(canvas,-14,-110+bounce,13,0xFFFFC4D8);circle(canvas,14,-110+bounce,13,0xFFFFC4D8);}
+    else if(outfit==5){circle(canvas,0,-115+bounce,17,0xFFFFD34D);circle(canvas,-22,-109+bounce,9,0xFFFFE58A);circle(canvas,22,-109+bounce,9,0xFFFFE58A);}
+    else if(outfit==6){oval(canvas,-92,4+bounce,-55,60+bounce,0xFF9D8CF5);oval(canvas,55,4+bounce,92,60+bounce,0xFF9D8CF5);}
+    else if(outfit==7){oval(canvas,-28,3+bounce,28,17+bounce,0xFF65D9D0);circle(canvas,0,10+bounce,7,0xFFFFE27A);}
+    else if(outfit==8){oval(canvas,-62,-4+bounce,62,28+bounce,0xFFFFC84A);circle(canvas,-32,-2+bounce,9,Color.BLACK);circle(canvas,32,-2+bounce,9,Color.BLACK);}
+    else if(outfit==9){oval(canvas,-42,-111+bounce,42,-91+bounce,0xFF61B7E8);oval(canvas,-48,-96+bounce,48,-88+bounce,0xFF3E8FC5);}
+    else if(outfit==10){oval(canvas,-26,-113+bounce,0,-92+bounce,0xFFFF79A8);oval(canvas,0,-113+bounce,26,-92+bounce,0xFFFF79A8);circle(canvas,0,-103+bounce,8,0xFFFFD45C);}
+    else if(outfit==11){oval(canvas,-72,5+bounce,72,48+bounce,0xFFB78CF4);oval(canvas,-55,20+bounce,55,57+bounce,0xFFFF9ACD);}
     canvas.restore();
     postInvalidateDelayed(90);
   }
