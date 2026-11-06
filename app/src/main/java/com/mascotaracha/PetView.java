@@ -25,10 +25,18 @@ public class PetView extends View {
   @Override protected void onDraw(Canvas canvas){
     super.onDraw(canvas);float w=getWidth(),h=getHeight();
     int bg=room==1?0xFFFFE8F0:room==2?0xFFE8F2FF:room==3?0xFFE2FAF5:0xFFFFF0D8;canvas.drawColor(bg);
+    // Decoración distinta y reconocible en cada habitación.
+    if(room==0){circle(canvas,w*.18f,h*.20f,dp(13),0xFFFFB7CB);circle(canvas,w*.22f,h*.17f,dp(9),0xFFFFD36E);oval(canvas,w*.08f,h*.70f,w*.30f,h*.84f,0xFF9BD28B);oval(canvas,w*.70f,h*.68f,w*.92f,h*.84f,0xFF9BD28B);}
+    else if(room==1){oval(canvas,w*.12f,h*.57f,w*.88f,h*.87f,0xFFFFC7D9);oval(canvas,w*.18f,h*.53f,w*.82f,h*.79f,0xFFFFF8FB);oval(canvas,w*.15f,h*.48f,w*.85f,h*.62f,0xFFB7D8F5);circle(canvas,w*.78f,h*.18f,dp(20),0xFFFFD36E);}
+    else if(room==2){oval(canvas,w*.08f,h*.57f,w*.92f,h*.88f,0xFFB7C9E8);oval(canvas,w*.15f,h*.52f,w*.85f,h*.78f,0xFFE7DDF8);oval(canvas,w*.05f,h*.28f,w*.28f,h*.56f,0xFF8BCB9A);oval(canvas,w*.72f,h*.28f,w*.95f,h*.56f,0xFF8BCB9A);}
+    else {oval(canvas,w*.08f,h*.60f,w*.92f,h*.88f,0xFFB9E9E0);oval(canvas,w*.12f,h*.56f,w*.88f,h*.79f,0xFFEFFFFB);circle(canvas,w*.78f,h*.23f,dp(25),0xFF9DD8F4);circle(canvas,w*.78f,h*.23f,dp(15),0xFFEFFFFB);}
     p.setColor(0x22FFFFFF);p.setStyle(Paint.Style.FILL);canvas.drawCircle(w*.18f,h*.18f,dp(42),p);canvas.drawCircle(w*.82f,h*.25f,dp(52),p);
     p.setColor(0x337A547F);canvas.drawRect(0,h*.82f,w,h,p);
     canvas.save();canvas.translate(w/2f,h*.54f);float s=Math.min(w/260f,h/250f);canvas.scale(s,s);
-    float bounce=(float)Math.sin((System.currentTimeMillis()-started)/180.0)*3;
+    long elapsed=System.currentTimeMillis()-started;
+    float bounce=(float)Math.sin(elapsed/180.0)*4;
+    float sway=(float)Math.sin(elapsed/420.0)*5;
+    canvas.save();canvas.rotate(sway,w/2f,h*.55f);
     int fur=animal.equals("Pandita")?Color.rgb(45,42,48):animal.equals("Gatito")?Color.rgb(245,177,205):animal.equals("Conejito")?Color.rgb(238,224,207):Color.rgb(207,151,105);
     int dark=Color.rgb(65,48,52);
     // sombra, cuerpo y patas
