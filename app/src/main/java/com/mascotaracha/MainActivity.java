@@ -15,7 +15,7 @@ import java.util.*;
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
-  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView;
+  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave"};
   int missionIndex; LinearLayout root,missionBox,shopBox;
@@ -53,6 +53,13 @@ public class MainActivity extends Activity {
     section("🛍️ Tienda de ropa y accesorios");shopBox=new LinearLayout(this);shopBox.setOrientation(1);root.addView(shopBox);
     for(int i=0;i<clothes.length;i++){final int ix=i;Button b=btn(clothes[i]+"  ·  "+(20+i*10)+" monedas");shopBox.addView(b);b.setOnClickListener(v->buy(ix));}
     section("🏡 Mi casita");TextView house=txt("Cuida, juega y vuelve cada día. Tu mascota te espera ❤️",15,false);root.addView(house);
+    section("☁️ Guarda tu mascota en tu cuenta");
+    emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Tu correo electrónico");emailInput.setInputType( android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);root.addView(emailInput);
+    passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña (mínimo 6 caracteres)");passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);root.addView(passwordInput);
+    LinearLayout accountButtons=new LinearLayout(this);
+    Button register=btn("Crear cuenta");accountButtons.addView(register,new LinearLayout.LayoutParams(0,dp(48),1));
+    Button login=btn("Iniciar sesión");accountButtons.addView(login,new LinearLayout.LayoutParams(0,dp(48),1));root.addView(accountButtons);
+    register.setOnClickListener(v->account("signup"));login.setOnClickListener(v->account("login"));
     status=txt("Guardando tus avances…",12,false);root.addView(status);refresh();
   }
   TextView txt(String s,int size,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(Color.rgb(48,35,68));if(bold)t.setTypeface(null,1);t.setPadding(4,dp(7),4,dp(7));return t;}
@@ -65,6 +72,24 @@ public class MainActivity extends Activity {
   String yesterday(){Calendar c=Calendar.getInstance();c.add(Calendar.DATE,-1);return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.getTime());}
   void buy(int i){int cost=20+i*10;if(num("coins")<cost){toast("Te faltan monedas. Completa misiones ❤️");return;}put("coins",num("coins")-cost);put("outfit",clothes[i]);petView.setOutfit(i);refresh();toast("¡Tu mascota estrenó "+clothes[i]+"!");}
   void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
+  void account(String mode){
+    String email=emailInput.getText().toString().trim(),password=passwordInput.getText().toString();
+    if(!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()||password.length()<6){toast("Escribe un correo válido y una contraseña de 6 caracteres o más.");return;}
+    if(status!=null)status.setText("Conectando tu cuenta…");
+    new Thread(()->{try{
+      JSONObject body=new JSONObject();body.put("email",email);body.put("password",password);
+      String endpoint=mode.equals("signup")?"/auth/v1/signup":"/auth/v1/token?grant_type=password";
+      HttpURLConnection c=(HttpURLConnection)new URL(URL+endpoint).openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(15000);c.setReadTimeout(15000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
+      int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception("No se pudo entrar: "+response);
+      JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");
+      if(access.length()==0||user==null){runOnUiThread(()->{if(status!=null)status.setText("Revisa tu correo para confirmar la cuenta y luego inicia sesión.");});return;}
+      String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).apply();
+      HttpURLConnection get=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?id=eq."+uid+"&select=data").openConnection();get.setRequestProperty("apikey",KEY);get.setRequestProperty("Authorization","Bearer "+access);get.setConnectTimeout(15000);get.setReadTimeout(15000);
+      if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null){state=cloud;prefs.edit().putString("state",state.toString()).apply();}}}
+      refreshWidget();syncCloud();runOnUiThread(()->{refresh();if(status!=null)status.setText("✅ Cuenta conectada. Tu mascota está guardada en la nube.");toast("¡Cuenta conectada! ❤️");});
+    }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo conectar: "+msg);});}}).start();
+  }
+  String readResponse(HttpURLConnection c)throws Exception{InputStream in=c.getResponseCode()<400?c.getInputStream():c.getErrorStream();if(in==null)return "";ByteArrayOutputStream b=new ByteArrayOutputStream();byte[] buf=new byte[2048];int n;while((n=in.read(buf))>0)b.write(buf,0,n);return b.toString("UTF-8");}
   void syncCloud(){new Thread(()->{try{
     String token=prefs.getString("token",null);if(token==null){JSONObject a=new JSONObject();a.put("data",new JSONObject());HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/signup").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(a.toString().getBytes("UTF-8"));JSONObject res=new JSONObject(read(c));token=res.optString("access_token",null);if(token==null)throw new Exception("Anonymous auth unavailable");prefs.edit().putString("token",token).putString("uid",res.getJSONObject("user").getString("id")).apply();}
     String uid=prefs.getString("uid","");JSONObject row=new JSONObject();row.put("id",uid);row.put("data",state);row.put("updated_at",new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US).format(new Date()));
