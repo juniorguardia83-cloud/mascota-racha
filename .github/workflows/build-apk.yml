@@ -9,6 +9,9 @@ on:
       - 'gradle.properties'
       - '.github/workflows/build-apk.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,3 +53,11 @@ jobs:
           name: Mascota-Racha-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Publicar APK para descargar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Mascota-Racha.apk
+          gh release delete apk-latest --cleanup-tag -y -R "${{ github.repository }}" || true
+          gh release create apk-latest Mascota-Racha.apk -R "${{ github.repository }}" --target "${{ github.sha }}" --title "Mascota Racha APK" --notes "APK de prueba listo para instalar."
