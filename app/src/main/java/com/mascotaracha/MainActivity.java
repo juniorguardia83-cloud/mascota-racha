@@ -11,7 +11,7 @@ import java.net.*;
 import java.io.*;
 import java.util.*;
 
-/** Native Android pet-care game. The pet is rendered as real OpenGL ES 3D geometry. */
+/** MimoPets: juego Android nativo con mascotas 2D animadas, habitaciones, tienda y progreso en la nube. */
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
