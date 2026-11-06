@@ -28,61 +28,85 @@ public class MainActivity extends Activity {
   void save(){prefs.edit().putString("state",state.toString()).apply();refreshWidget();syncCloud();}
   void refreshWidget(){Intent i=new Intent(this,PetWidgetProvider.class);i.setAction(android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE);int[] ids=android.appwidget.AppWidgetManager.getInstance(this).getAppWidgetIds(new android.content.ComponentName(this,PetWidgetProvider.class));i.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);sendBroadcast(i);}
   void buildUI(){
-    LinearLayout shell=new LinearLayout(this);shell.setOrientation(1);shell.setBackgroundColor(0xFFF4FAF0);
+    LinearLayout shell=new LinearLayout(this);shell.setOrientation(1);shell.setBackgroundColor(0xFFF5FAF2);
     pageScroll=new ScrollView(this);pageScroll.setFillViewport(true);
-    root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(12),dp(16),dp(22));root.setBackgroundColor(0xFFF4FAF0);
-    pageScroll.addView(root);shell.addView(pageScroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(shell);
-
-    LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
-    TextView logo=txt("🐾 MimoPets",24,true);logo.setTextColor(0xFF47794B);header.addView(logo,new LinearLayout.LayoutParams(0,-2,1));
-    TextView avatar=txt("♡",25,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(round(0xFFFFFFFF,dp(24)));header.addView(avatar,new LinearLayout.LayoutParams(dp(46),dp(46)));root.addView(header);
-    root.addView(txt("¡Tu pequeño mundo feliz! 🌿",14,false));
-    LinearLayout wallet=card(0xFFE3F2DC);wallet.setPadding(dp(12),dp(8),dp(12),dp(8));stats=txt("",15,true);stats.setTextColor(0xFF47794B);wallet.addView(stats);root.addView(wallet);
-
-    LinearLayout hero=card(0xFFDFF1D6);hero.setOrientation(1);hero.setPadding(dp(14),dp(12),dp(14),dp(12));LinearLayout.LayoutParams heroP=new LinearLayout.LayoutParams(-1,-2);heroP.topMargin=dp(12);root.addView(hero,heroP);
-    TextView heroTitle=txt("¡Hola, amiguito! 💚",20,true);heroTitle.setTextColor(0xFF376B3D);hero.addView(heroTitle);
-    hero.addView(txt("Toca a tu mascota para darle cariño",13,false));
-    petView=new PetView(this);hero.addView(petView,new LinearLayout.LayoutParams(-1,dp(245)));
+    root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);
+    pageScroll.addView(root);shell.addView(pageScroll,new LinearLayout.LayoutParams(-1,0,1));
+    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(round(0xFFFFFFFF,dp(22)));
+    String[] labels={"⌂\\nInicio","🐾\\nMascota","🏡\\nCasa","🛍️\\nTienda","👤\\nPerfil"};
+    for(int i=0;i<labels.length;i++){final int tab=i;Button b=btn(labels[i]);b.setTextSize(10);nav.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));b.setOnClickListener(v->showTab(tab));}
+    shell.addView(nav,new LinearLayout.LayoutParams(-1,dp(70)));setContentView(shell);showTab(0);
+  }
+  void header(String subtitle){
+    LinearLayout h=new LinearLayout(this);h.setGravity(Gravity.CENTER_VERTICAL);
+    TextView brand=txt("🐾 MimoPets",25,true);brand.setTextColor(0xFF47794B);h.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+    TextView coin=txt("🪙 "+num("coins"),15,true);coin.setTextColor(0xFF9A7541);h.addView(coin);root.addView(h);
+    TextView sub=txt(subtitle,13,false);sub.setTextColor(0xFF789078);root.addView(sub);
+  }
+  void showTab(int tab){
+    root.removeAllViews();status=null;stats=null;missionText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
+    if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
+    pageScroll.post(()->pageScroll.scrollTo(0,0));
+  }
+  void homePage(){
+    header("Tu pequeño mundo feliz 🌿");
+    LinearLayout wallet=card(0xFFE4F2DD);wallet.setPadding(dp(12),dp(6),dp(12),dp(6));stats=txt("",15,true);stats.setTextColor(0xFF47794B);wallet.addView(stats);root.addView(wallet);
+    LinearLayout hero=card(0xFFDDF0D5);hero.setOrientation(1);hero.setPadding(dp(14),dp(10),dp(14),dp(10));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(12);root.addView(hero,hp);
+    hero.addView(txt("¡Tu mascota te extrañó! 💚",19,true));hero.addView(txt("Tócala para darle cariño y verla moverse",13,false));
+    petView=new PetView(this);hero.addView(petView,new LinearLayout.LayoutParams(-1,dp(255)));
     petView.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){petView.pet();toast("¡"+pet()+" está feliz! 💗");return true;}return true;});
-
-    section("🏡  Habitaciones");roomBox=new LinearLayout(this);roomBox.setOrientation(LinearLayout.HORIZONTAL);root.addView(roomBox);
-    String[] rooms={"🌷 Jardín","🛏️ Cuarto","🛋️ Sala","🫧 Baño"};
-    for(int i=0;i<rooms.length;i++){final int ix=i;Button x=btn(rooms[i]);x.setTextSize(10);roomBox.addView(x,new LinearLayout.LayoutParams(0,dp(48),1));x.setOnClickListener(v->{put("room",ix);petView.setRoom(ix);toast("Habitación: "+rooms[ix]);});}
-
-    section("🐾  Mis mascotas");LinearLayout choices=new LinearLayout(this);root.addView(choices);
-    String[] pets={"🐶 Perrito","🐱 Gatito","🐰 Conejito","🐼 Pandita"};String[] petKeys={"Perrito","Gatito","Conejito","Pandita"};
-    for(int i=0;i<pets.length;i++){final String chosen=petKeys[i];Button x=btn(pets[i]);x.setTextSize(10);choices.addView(x,new LinearLayout.LayoutParams(0,dp(50),1));x.setOnClickListener(v->{put("pet",chosen);petView.setPet(chosen);refresh();});}
-
-    section("💗  Cuidados");LinearLayout care=card(0xFFFFFFFF);care.setPadding(dp(5),dp(7),dp(5),dp(7));care.setOrientation(LinearLayout.HORIZONTAL);root.addView(care);
-    String[] careNames={"🍎 Comida","🎾 Jugar","🛁 Bañar"};String[] careKeys={"food","fun","clean"};
-    for(int i=0;i<careNames.length;i++){final String key=careKeys[i];Button x=btn(careNames[i]);x.setTextSize(11);care.addView(x,new LinearLayout.LayoutParams(0,dp(48),1));x.setOnClickListener(v->care(key));}
-
-    section("🔥  Racha diaria");LinearLayout streakCard=card(0xFFFFF0D8);streakCard.setOrientation(1);streakCard.setPadding(dp(13),dp(10),dp(13),dp(10));root.addView(streakCard);
-    streakCard.addView(txt("¡Sigue cuidándolo cada día!",15,true));
-    weekBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);weekBar.setMax(7);weekBar.setProgress(num("weekProgress"));streakCard.addView(weekBar,new LinearLayout.LayoutParams(-1,dp(12)));
-    streakCard.addView(txt("L     M     X     J     V     S     D",12,true));
-
-    section("🎯  Misión de hoy");LinearLayout mission=card(0xFFFFE7EF);mission.setOrientation(1);mission.setPadding(dp(12),dp(10),dp(12),dp(10));root.addView(mission);
+    section("🎯 Misión de hoy");LinearLayout mission=card(0xFFFFE8F0);mission.setOrientation(1);mission.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(mission);
     missionText=txt("",16,true);missionText.setTextColor(0xFF98536F);mission.addView(missionText);
-    Button complete=btn("¡Misión lista!  +10 🪙");mission.addView(complete);complete.setOnClickListener(v->completeMission());
-
-    section("🛍️  Tienda");shopBox=new LinearLayout(this);shopBox.setOrientation(1);root.addView(shopBox);
-    for(int i=0;i<clothes.length;i++){final int ix=i;Button x=btn(clothes[i]+"  ·  "+prices[i]+" 🪙");shopBox.addView(x);x.setOnClickListener(v->buy(ix));}
-    section("🎒  Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);
-
-    section("☁️  Mi cuenta");LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(10),dp(6),dp(10),dp(6));root.addView(account);
+    Button done=btn("Completar misión  ·  +10 🪙");mission.addView(done);done.setOnClickListener(v->completeMission());
+    section("🔥 Tu racha");LinearLayout streak=card(0xFFFFF1D9);streak.setOrientation(1);streak.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(streak);
+    streak.addView(txt("¡Cada día juntos desbloquea premios!",15,true));weekBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);weekBar.setMax(7);streak.addView(weekBar,new LinearLayout.LayoutParams(-1,dp(12)));
+    streak.addView(txt("Lun   Mar   Mié   Jue   Vie   Sáb   Dom",12,true));
+    Button goPets=btn("🐾 Cuidar a mi mascota");root.addView(goPets);goPets.setOnClickListener(v->showTab(1));
+    Button goHome=btn("🏡 Decorar mi casita");root.addView(goHome);goHome.setOnClickListener(v->showTab(2));
+    refresh();
+  }
+  void petsPage(){
+    header("Conoce y cuida a tus compañeros 🐾");
+    section("Elige a tu mascota");
+    String[] names={"🐶 Perrito","🐱 Gatito","🐰 Conejito","🐼 Pandita"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
+    for(int i=0;i<names.length;i++){final String k=keys[i];Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("pet",k);showTab(1);});}
+    section("💗 Cuidados diarios");
+    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
+    String[] labels={"🍎 Dar comida","🎾 Jugar","🛁 Bañar","🌙 Descansar"};String[] keys2={"food","fun","clean","energy"};
+    for(int i=0;i<labels.length;i++){final String k=keys2[i];Button b=btn(labels[i]);root.addView(b);b.setOnClickListener(v->{care(k);refresh();});}
+    section("Estado de tu mascota");
+    String[] meters={"food","fun","clean","energy"};String[] meterLabels={"Hambre","Diversión","Higiene","Energía"};
+    for(int i=0;i<meters.length;i++){TextView t=txt(meterLabels[i]+"  ·  "+state.optInt(meters[i],70)+"%",14,true);root.addView(t);ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(state.optInt(meters[i],70));root.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
+    section("✨ Crecimiento");int xp=num("xp"),level=Math.max(1,num("level"));root.addView(txt("Nivel "+level+"  ·  "+xp+"/100 XP",16,true));
+    ProgressBar xpbar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);xpbar.setMax(100);xpbar.setProgress(xp%100);root.addView(xpbar,new LinearLayout.LayoutParams(-1,dp(12)));
+  }
+  void housePage(){
+    header("Un hogar bonito para tu mascota 🏡");
+    section("Elige una habitación");
+    String[] rooms={"🌷 Jardín","🛏️ Dormitorio","🛋️ Sala","🫧 Baño"};
+    for(int i=0;i<rooms.length;i++){final int ix=i;Button b=btn(rooms[i]+(state.optInt("room",0)==i?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("room",ix);showTab(2);});}
+    section("Así se ve tu habitación");
+    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(300)));
+    root.addView(txt("Cada habitación tiene su propio ambiente y decoración. Cambia de espacio cuando quieras.",13,false));
+    section("🎀 Personaliza a tu compañero");Button wardrobe=btn("Abrir mi armario");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
+  }
+  void shopPage(){
+    header("Compra cositas con tus monedas 🛍️");
+    LinearLayout wallet=card(0xFFFFF0D5);wallet.setPadding(dp(12),dp(6),dp(12),dp(6));wallet.addView(txt("Tu saldo: "+num("coins")+" 🪙",17,true));root.addView(wallet);
+    section("✨ Accesorios para tu mascota");
+    for(int i=0;i<clothes.length;i++){final int ix=i;Button b=btn(clothes[i]+"   ·   "+prices[i]+" 🪙");root.addView(b);b.setOnClickListener(v->buy(ix));}
+    section("🎒 Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);refresh();
+  }
+  void profilePage(){
+    header("Tu cuenta y tus recuerdos ☁️");
+    LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(account);
     emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);account.addView(emailInput);
     passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña (mínimo 6 caracteres)");passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);account.addView(passwordInput);
-    LinearLayout accountButtons=new LinearLayout(this);Button register=btn("Crear cuenta");accountButtons.addView(register,new LinearLayout.LayoutParams(0,dp(48),1));Button login=btn("Iniciar sesión");accountButtons.addView(login,new LinearLayout.LayoutParams(0,dp(48),1));account.addView(accountButtons);
-    register.setOnClickListener(v->account("signup"));login.setOnClickListener(v->account("login"));
+    LinearLayout actions=new LinearLayout(this);Button signup=btn("Crear cuenta");actions.addView(signup,new LinearLayout.LayoutParams(0,dp(48),1));Button login=btn("Iniciar sesión");actions.addView(login,new LinearLayout.LayoutParams(0,dp(48),1));account.addView(actions);
+    signup.setOnClickListener(v->account("signup"));login.setOnClickListener(v->account("login"));
+    section("📊 Tu aventura");root.addView(txt("🔥 Racha: "+num("streak")+" días",16,true));root.addView(txt("⭐ Nivel: "+Math.max(1,num("level")),16,true));root.addView(txt("🪙 Monedas: "+num("coins"),16,true));
     Button share=btn("📤 Compartir mi mascota");root.addView(share);share.setOnClickListener(v->sharePet());
-    status=txt("☁️ Guardado de progreso",12,false);root.addView(status);
-
-    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(4),dp(4),dp(4),dp(4));nav.setBackground(round(0xFFFFFFFF,dp(20)));
-    String[] labels={"⌂\nInicio","🐾\nPets","🛍️\nTienda","🎒\nArmario","🔥\nRacha"};
-    View[] targets={hero,choices,shopBox,inventoryBox,streakCard};
-    for(int i=0;i<labels.length;i++){final View target=targets[i];Button n=btn(labels[i]);n.setTextSize(10);nav.addView(n,new LinearLayout.LayoutParams(0,dp(54),1));n.setOnClickListener(v->pageScroll.post(()->pageScroll.smoothScrollTo(0,target.getTop())));}
-    shell.addView(nav,new LinearLayout.LayoutParams(-1,dp(66)));refresh();
+    status=txt("☁️ Guardado en este teléfono y sincronización con Supabase",12,false);root.addView(status);
   }
   android.graphics.drawable.GradientDrawable round(int color,int radius){android.graphics.drawable.GradientDrawable d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(radius);return d;}
   LinearLayout card(int color){LinearLayout x=new LinearLayout(this);x.setBackground(round(color,dp(20)));return x;}
@@ -90,11 +114,15 @@ public class MainActivity extends Activity {
   void section(String s){TextView t=txt(s,17,true);t.setTextColor(0xFF47794B);t.setPadding(4,dp(16),4,dp(6));root.addView(t);}
   Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(0xFF47794B);b.setTextSize(13);b.setAllCaps(false);b.setPadding(dp(4),dp(2),dp(4),dp(2));b.setBackground(round(0xFFE5F2DE,dp(16)));return b;}
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
-  void refresh(){if(stats==null)return;stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas    ❤️ "+state.optInt("fun",75)+"%");
-    missionText.setText("Hoy: "+missions[missionIndex]);if(weekBar!=null)weekBar.setProgress(num("weekProgress"));petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));
-    inventoryBox.removeAllViews();JSONArray owned=state.optJSONArray("owned");boolean any=false;
-    if(owned!=null)for(int x=0;x<owned.length();x++){int ix=owned.optInt(x,-1);if(ix>=0&&ix<clothes.length){any=true;Button wear=btn(clothes[ix]+(state.optInt("outfit",-1)==ix?"  ✓ Puesto":"  · Usar"));inventoryBox.addView(wear);wear.setOnClickListener(v->{put("outfit",ix);refresh();toast("¡Nuevo look!");});}}
-    if(!any)inventoryBox.addView(txt("Todavía no tienes accesorios. ¡Visita la tienda!",13,false));
+  void refresh(){
+    if(stats!=null)stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas    ❤️ "+state.optInt("fun",75)+"%");
+    if(missionText!=null)missionText.setText("Hoy: "+missions[missionIndex]);
+    if(weekBar!=null)weekBar.setProgress(num("weekProgress"));
+    if(petView!=null){petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));}
+    if(inventoryBox!=null){inventoryBox.removeAllViews();JSONArray owned=state.optJSONArray("owned");boolean any=false;
+      if(owned!=null)for(int x=0;x<owned.length();x++){int ix=owned.optInt(x,-1);if(ix>=0&&ix<clothes.length){any=true;Button wear=btn(clothes[ix]+(state.optInt("outfit",-1)==ix?"  ✓ Puesto":"  · Usar"));inventoryBox.addView(wear);wear.setOnClickListener(v->{put("outfit",ix);refresh();toast("¡Nuevo look!");});}}
+      if(!any)inventoryBox.addView(txt("Todavía no tienes accesorios. ¡Visita la tienda!",13,false));
+    }
   }
   void sharePet(){String message="¡Mira a mi "+pet()+" en MimoPets! 🔥 Llevo "+num("streak")+" días de racha y tengo "+num("coins")+" monedas. 🐾";
     Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,message+" https://github.com/juniorguardia83-cloud/mascota-racha");startActivity(Intent.createChooser(send,"Compartir mi mascota"));}
