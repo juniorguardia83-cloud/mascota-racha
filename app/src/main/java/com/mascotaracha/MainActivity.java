@@ -15,7 +15,7 @@ import java.util.*;
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
-  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput;
+  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; ProgressBar weekBar;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
 
     section("🔥  Racha diaria");LinearLayout streakCard=card(0xFFFFF0D8);streakCard.setOrientation(1);streakCard.setPadding(dp(13),dp(10),dp(13),dp(10));root.addView(streakCard);
     streakCard.addView(txt("¡Sigue cuidándolo cada día!",15,true));
-    ProgressBar week=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);week.setMax(7);week.setProgress(num("weekProgress"));streakCard.addView(week,new LinearLayout.LayoutParams(-1,dp(12)));
+    weekBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);weekBar.setMax(7);weekBar.setProgress(num("weekProgress"));streakCard.addView(weekBar,new LinearLayout.LayoutParams(-1,dp(12)));
     streakCard.addView(txt("L     M     X     J     V     S     D",12,true));
 
     section("🎯  Misión de hoy");LinearLayout mission=card(0xFFFFE7EF);mission.setOrientation(1);mission.setPadding(dp(12),dp(10),dp(12),dp(10));root.addView(mission);
@@ -91,7 +91,7 @@ public class MainActivity extends Activity {
   Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(0xFF47794B);b.setTextSize(13);b.setAllCaps(false);b.setPadding(dp(4),dp(2),dp(4),dp(2));b.setBackground(round(0xFFE5F2DE,dp(16)));return b;}
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
   void refresh(){if(stats==null)return;stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas    ❤️ "+state.optInt("fun",75)+"%");
-    missionText.setText("Hoy: "+missions[missionIndex]);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));
+    missionText.setText("Hoy: "+missions[missionIndex]);if(weekBar!=null)weekBar.setProgress(num("weekProgress"));petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));
     inventoryBox.removeAllViews();JSONArray owned=state.optJSONArray("owned");boolean any=false;
     if(owned!=null)for(int x=0;x<owned.length();x++){int ix=owned.optInt(x,-1);if(ix>=0&&ix<clothes.length){any=true;Button wear=btn(clothes[ix]+(state.optInt("outfit",-1)==ix?"  ✓ Puesto":"  · Usar"));inventoryBox.addView(wear);wear.setOnClickListener(v->{put("outfit",ix);refresh();toast("¡Nuevo look!");});}}
     if(!any)inventoryBox.addView(txt("Todavía no tienes accesorios. ¡Visita la tienda!",13,false));
