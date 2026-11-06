@@ -12,9 +12,9 @@ import android.widget.RemoteViews;
 public class PetWidgetProvider extends AppWidgetProvider {
   @Override public void onUpdate(Context context,AppWidgetManager manager,int[] ids){
     SharedPreferences prefs=context.getSharedPreferences("petgame",Context.MODE_PRIVATE);
-    String pet="🐶 "+prefs.getString("pet","Perrito");
+    String pet="🐾 Perrito";
     int coins=0,streak=0;
-    try{org.json.JSONObject s=new org.json.JSONObject(prefs.getString("state","{}"));coins=s.optInt("coins",0);streak=s.optInt("streak",0);}catch(Exception ignored){}
+    try{org.json.JSONObject s=new org.json.JSONObject(prefs.getString("state","{}"));String name=s.optString("pet","Perrito");String emoji=name.equals("Gatito")?"🐱":name.equals("Conejito")?"🐰":name.equals("Pandita")?"🐼":"🐶";pet=emoji+" "+name;coins=s.optInt("coins",0);streak=s.optInt("streak",0);}catch(Exception ignored){}
     for(int id:ids){
       RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.pet_widget);
       views.setTextViewText(R.id.widget_pet,pet);
