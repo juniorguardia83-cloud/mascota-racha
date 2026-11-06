@@ -32,9 +32,9 @@ public class MainActivity extends Activity {
   void buildUI(){
     root=new LinearLayout(this);root.setOrientation(1);root.setPadding(18,12,18,18);root.setBackgroundColor(Color.rgb(248,244,255));
     ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
-    TextView title=txt("🐾 MASCOTA RACHA",25,true);root.addView(title);
+    TextView title=txt("🐾 MIMOPETS",25,true);root.addView(title);
     stats=txt("",17,true);root.addView(stats);
-    TextView tip=txt("Tu compañerito 3D necesita tu cariño cada día",14,false);root.addView(tip);
+    TextView tip=txt("Tu compañerito necesita tu cariño cada día",14,false);root.addView(tip);
     GLSurfaceView gl=new GLSurfaceView(this);gl.setEGLContextClientVersion(2);renderer=new PetRenderer();gl.setRenderer(renderer);gl.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,dp(285));gp.topMargin=dp(10);root.addView(gl,gp);
     gl.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){renderer.pet();return true;}return true;});
