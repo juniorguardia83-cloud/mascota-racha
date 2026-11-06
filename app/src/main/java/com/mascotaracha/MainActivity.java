@@ -24,7 +24,8 @@ public class MainActivity extends Activity {
   JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
   void put(String k,Object v){try{state.put(k,v);}catch(Exception e){}save();}
-  void save(){prefs.edit().putString("state",state.toString()).apply();syncCloud();}
+  void save(){prefs.edit().putString("state",state.toString()).apply();refreshWidget();syncCloud();}
+  void refreshWidget(){Intent i=new Intent(this,PetWidgetProvider.class);i.setAction(android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE);int[] ids=android.appwidget.AppWidgetManager.getInstance(this).getAppWidgetIds(new android.content.ComponentName(this,PetWidgetProvider.class));i.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);sendBroadcast(i);}
   void buildUI(){
     root=new LinearLayout(this);root.setOrientation(1);root.setPadding(18,12,18,18);root.setBackgroundColor(Color.rgb(248,244,255));
     ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
