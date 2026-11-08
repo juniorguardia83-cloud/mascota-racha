@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
-  int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
+  int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox,bottomNav; ScrollView pageScroll;
   public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();handleAuthIntent(getIntent());if(prefs.getString("token",null)!=null)showTab(0);else showTab(5);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
   JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
@@ -33,7 +33,7 @@ public class MainActivity extends Activity {
     pageScroll=new ScrollView(this);pageScroll.setFillViewport(true);
     root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);
     pageScroll.addView(root);shell.addView(pageScroll,new LinearLayout.LayoutParams(-1,0,1));
-    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(round(0xFFFFFFFF,dp(22)));
+    LinearLayout nav=new LinearLayout(this);bottomNav=nav;nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(round(0xFFFFFFFF,dp(22)));
     String[] labels={"⌂\\nInicio","🐾\\nMascota","🏡\\nCasa","🛍️\\nTienda","👤\\nPerfil"};
     for(int i=0;i<labels.length;i++){final int tab=i;Button b=btn(labels[i]);b.setTextSize(10);nav.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));b.setOnClickListener(v->showTab(tab));}
     shell.addView(nav,new LinearLayout.LayoutParams(-1,dp(70)));setContentView(shell);showTab(0);
@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
     TextView sub=txt(subtitle,13,false);sub.setTextColor(0xFF789078);root.addView(sub);
   }
   void showTab(int tab){
-    root.removeAllViews();status=null;stats=null;missionText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
+    root.removeAllViews();if(bottomNav!=null)bottomNav.setVisibility(tab==5?View.GONE:View.VISIBLE);status=null;stats=null;missionText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
     if(tab==5)loginPage();else if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
     pageScroll.post(()->pageScroll.scrollTo(0,0));
   }
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
     section("Así se ve tu habitación");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(300)));
     root.addView(txt("Tu casa cambia de ambiente según la habitación. ¡Entra, cuida y decora!",13,false));
-    section("🏠 Otras zonas de tu casa");String[] roomsButtons={"🛋️ Salón","🍳 Cocina","🫧 Baño","🛏️ Dormitorio","🌷 Jardín"};for(int i=0;i<roomsButtons.length;i++){final int ix=i;Button zone=btn(roomsButtons[i]);root.addView(zone);zone.setOnClickListener(v->{put("room",ix);showTab(2);});}\n    section("🎀 Personaliza a tu compañero");Button wardrobe=btn("Abrir mi armario");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
+    section("🎀 Personaliza a tu compañero");Button wardrobe=btn("Abrir mi armario");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
   }
   void shopPage(){
     header("Compra cositas con tus monedas 🛍️");
