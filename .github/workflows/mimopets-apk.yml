@@ -41,26 +41,23 @@ jobs:
         run: |
           VERSION="1.0.${GITHUB_RUN_NUMBER}"
           TAG="v${VERSION}"
-          gh release create "$TAG" app/build/outputs/apk/debug/app-debug.apk \\
-            --title "MimoPets ${VERSION}" \\
-            --notes "Nueva actualización de MimoPets. Instala el APK para recibir las mejoras."
+          gh release create "$TAG" app/build/outputs/apk/debug/app-debug.apk --title "MimoPets ${VERSION}" --notes "Nueva actualización de MimoPets. Instala el APK para recibir las mejoras."
 
       - name: Register update in Supabase
-        if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GH_REPOSITORY: ${{ github.repository }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Faltan los secretos de Supabase; el APK quedó publicado en GitHub y se omitió el anuncio en la base de datos."
+            exit 0
+          fi
           VERSION="1.0.${RUN_NUMBER}"
           APK_URL="https://github.com/${GH_REPOSITORY}/releases/download/v${VERSION}/app-debug.apk"
           BODY=$(jq -n --argjson code "$RUN_NUMBER" --arg version "$VERSION" --arg title "MimoPets ${VERSION}" --arg notes "Nueva versión disponible. Incluye mejoras y correcciones." --arg apk "$APK_URL" '{version_code:$code,version_name:$version,title:$title,notes:$notes,apk_url:$apk,is_published:true}')
-          curl --fail --silent --show-error "${SUPABASE_URL}/rest/v1/app_updates" \\
-            -X POST -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \\
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \\
-            -H "Content-Type: application/json" -H "Prefer: resolution=merge-duplicates" \\
-            --data "$BODY"
+          curl --fail --silent --show-error "${SUPABASE_URL}/rest/v1/app_updates" -X POST -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" -H "Content-Type: application/json" -H "Prefer: resolution=merge-duplicates" --data "$BODY"
 
       - name: Keep APK as workflow artifact
         uses: actions/upload-artifact@v4
