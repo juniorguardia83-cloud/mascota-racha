@@ -12,16 +12,14 @@ import android.widget.RemoteViews;
 public class PetWidgetProvider extends AppWidgetProvider {
   @Override public void onUpdate(Context context,AppWidgetManager manager,int[] ids){
     SharedPreferences prefs=context.getSharedPreferences("petgame",Context.MODE_PRIVATE);
-    String pet="🐾 Perrito";
-    int coins=0,streak=0;
-    try{org.json.JSONObject s=new org.json.JSONObject(prefs.getString("state","{}"));String name=s.optString("pet","Perrito");String emoji=name.equals("Gatito")?"🐱":name.equals("Conejito")?"🐰":name.equals("Pandita")?"🐼":"🐶";pet=emoji+" "+name;coins=s.optInt("coins",0);streak=s.optInt("streak",0);}catch(Exception ignored){}
+    String name="Perrito";int coins=0,streak=0;org.json.JSONObject state;
+    try{state=new org.json.JSONObject(prefs.getString("state","{}"));name=state.optString("pet","Perrito");coins=state.optInt("coins",0);streak=state.optInt("streak",0);}catch(Exception ignored){state=new org.json.JSONObject();}
     for(int id:ids){
       RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.pet_widget);
       views.setTextViewText(R.id.widget_pet,name);
       String face=name.equals("Gatito")?"🐱":name.equals("Conejito")?"🐰":name.equals("Pandita")?"🐼":"🐶";
       views.setTextViewText(R.id.widget_face,face);
-      org.json.JSONObject s=new org.json.JSONObject(prefs.getString("state","{}"));
-      int energy=s.optInt("energy",75),fun=s.optInt("fun",75);
+      int energy=state.optInt("energy",75),fun=state.optInt("fun",75);
       String message=energy<30?"Está muy somnoliento… quiere ir a la cama. 🌙":fun<30?"Está aburrido… ¿jugamos un ratito? 🎾":"¡Hola! Está feliz de verte. 💗";
       views.setTextViewText(R.id.widget_message,message);
       views.setTextViewText(R.id.widget_stats,"🔥 "+streak+" días  ·  🪙 "+coins+" monedas");
