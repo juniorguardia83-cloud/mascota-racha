@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
     root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);
     pageScroll.addView(root);shell.addView(pageScroll,new LinearLayout.LayoutParams(-1,0,1));
     LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(round(0xFFFFFFFF,dp(22)));
-    String[] labels={"⌂\\nInicio","🐾\\nMascota","🏡\\nCasa","🛍️\\nTienda","👤\\nPerfil"};
+    String[] labels={"⌂\nInicio","🐾\nMascota","🏡\nCasa","🛍️\nTienda","👤\nPerfil"};
     for(int i=0;i<labels.length;i++){final int tab=i;Button b=btn(labels[i]);b.setTextSize(10);nav.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));b.setOnClickListener(v->showTab(tab));}
     shell.addView(nav,new LinearLayout.LayoutParams(-1,dp(70)));setContentView(shell);showTab(0);
   }
@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
   void header(String subtitle){
     LinearLayout h=new LinearLayout(this);h.setGravity(Gravity.CENTER_VERTICAL);
     TextView brand=txt("🐾 MimoPets",25,true);brand.setTextColor(0xFF47794B);h.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
-    TextView coin=txt("🪙 "+num("coins"),15,true);coin.setTextColor(0xFF9A7541);h.addView(coin);root.addView(h);
+    TextView coin=txt("🪙 "+num("coins")+"     💎 "+num("gems"),16,true);coin.setTextColor(0xFF9A7541);coin.setGravity(Gravity.RIGHT);h.addView(coin);root.addView(h);
     TextView sub=txt(subtitle,13,false);sub.setTextColor(0xFF789078);root.addView(sub);
   }
   void showTab(int tab){
@@ -94,6 +94,9 @@ public class MainActivity extends Activity {
     LinearLayout row3=new LinearLayout(this);row3.setOrientation(0);row3.setGravity(Gravity.CENTER);root.addView(row3);
     row3.addView(dashCard("Te extraño","Comparte un mensaje","💌",0xFFF9DDF2,4),new LinearLayout.LayoutParams(0,dp(158),1));
     row3.addView(dashCard("Mi estado","Tu perfil y recuerdos","🌿",0xFFDDE4FF,4),new LinearLayout.LayoutParams(0,dp(158),1));
+    LinearLayout row4=new LinearLayout(this);row4.setOrientation(0);row4.setGravity(Gravity.CENTER);root.addView(row4);
+    row4.addView(dashCard("Minijuegos","Juega y gana monedas","🎮",0xFFDDF4F0,5),new LinearLayout.LayoutParams(0,dp(150),1));
+    row4.addView(dashCard("Estado de ánimo","Expresa cómo te sientes","😊",0xFFFFE1EF,1),new LinearLayout.LayoutParams(0,dp(150),1));
     section("🐾 Tu compañero de hoy");
     LinearLayout petCard=card(0xFFF1F8E9);petCard.setOrientation(1);petCard.setPadding(dp(10),dp(6),dp(10),dp(8));root.addView(petCard);
     petCard.addView(txt("¡"+pet()+" te está esperando!",17,true));
@@ -109,7 +112,7 @@ public class MainActivity extends Activity {
     LinearLayout c=card(color);c.setOrientation(1);c.setPadding(dp(12),dp(8),dp(8),dp(8));c.setGravity(Gravity.CENTER_VERTICAL);
     TextView tag=txt(emoji,31,true);c.addView(tag);
     c.addView(txt(title,18,true));TextView sub=txt(subtitle,12,false);sub.setTextColor(0xFF776B72);c.addView(sub);
-    LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)c.getLayoutParams();c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else showTab(tab);});
+    LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)c.getLayoutParams();c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
     return c;
   }
   void petsPage(){
@@ -117,6 +120,8 @@ public class MainActivity extends Activity {
     section("Elige a tu mascota");
     String[] names={"🐶 Perrito","🐱 Gatito","🐰 Conejito","🐼 Pandita"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
     for(int i=0;i<names.length;i++){final String k=keys[i];Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("pet",k);showTab(1);});}
+    section("💗 ¿Cómo te sientes hoy?");
+    Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
     section("💗 Cuidados diarios");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
     String[] labels={"🍎 Dar comida","🎾 Jugar","🛁 Bañar","🌙 Descansar"};String[] keys2={"food","fun","clean","energy"};
@@ -163,16 +168,10 @@ public class MainActivity extends Activity {
     Button saveProfile=btn("Guardar perfil");account.addView(saveProfile);saveProfile.setOnClickListener(v->{prefs.edit().putString("profile_name",displayName.getText().toString().trim()).apply();toast("Perfil guardado 💚");});
     account.addView(txt("Cuenta: "+prefs.getString("user_email","Sesión iniciada"),12,false));
     account.addView(txt("Entra para guardar tu mascota y continuar tu aventura en otros dispositivos.",13,false));
-    emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);account.addView(emailInput);
-    passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña (mínimo 6 caracteres)");passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);account.addView(passwordInput);
-    termsCheck=new CheckBox(this);termsCheck.setText("He leído y acepto los términos y la política de privacidad");termsCheck.setTextColor(0xFF527653);account.addView(termsCheck);
-    TextView termsLink=txt("Leer términos y condiciones",13,true);termsLink.setTextColor(0xFFB45D8B);account.addView(termsLink);termsLink.setOnClickListener(v->showTerms());
-    Button signup=btn("Crear mi cuenta");account.addView(signup,new LinearLayout.LayoutParams(-1,dp(48)));
-    Button login=btn("Iniciar sesión");account.addView(login,new LinearLayout.LayoutParams(-1,dp(48)));
-    Button google=btn("🌈 Continuar con Google");account.addView(google,new LinearLayout.LayoutParams(-1,dp(48)));
-    TextView forgot=txt("¿Olvidaste tu contraseña? Recuperar acceso",13,true);forgot.setTextColor(0xFFB45D8B);account.addView(forgot);
-    signup.setOnClickListener(v->{if(termsCheck.isChecked())account("signup");else toast("Acepta los términos para crear tu cuenta.");});
-    login.setOnClickListener(v->account("login"));google.setOnClickListener(v->googleLogin());forgot.setOnClickListener(v->recoverPassword());
+    TextView session=txt("✓ Sesión iniciada",17,true);session.setTextColor(0xFF3C8B55);account.addView(session);
+    TextView sessionInfo=txt("Tu cuenta está conectada. Tus monedas, mascotas y progreso se guardan en este dispositivo y se sincronizan con Supabase.",13,false);account.addView(sessionInfo);
+    Button signOut=btn("Cerrar sesión");account.addView(signOut,new LinearLayout.LayoutParams(-1,dp(48)));
+    signOut.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("¿Cerrar sesión?").setMessage("Tu progreso guardado permanecerá en este teléfono.").setNegativeButton("Cancelar",null).setPositiveButton("Cerrar sesión",(d,w)->{prefs.edit().putBoolean("signed_in",false).remove("token").remove("uid").apply();buildUI();}).show());
     section("📊 Tu aventura");root.addView(txt("🔥 Racha: "+num("streak")+" días",16,true));root.addView(txt("⭐ Nivel: "+Math.max(1,num("level")),16,true));root.addView(txt("🪙 Monedas: "+num("coins"),16,true));
     Button share=btn("📤 Compartir mi mascota");root.addView(share);share.setOnClickListener(v->sharePet());
     status=txt("Tus avances se guardan en este teléfono. Al iniciar sesión puedes vincularlos a tu cuenta.",12,false);root.addView(status);
@@ -185,7 +184,7 @@ public class MainActivity extends Activity {
   LinearLayout card(int color){LinearLayout x=new LinearLayout(this);x.setBackground(round(color,dp(20)));return x;}
   TextView txt(String s,int size,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(Color.rgb(48,35,68));if(bold)t.setTypeface(null,1);t.setPadding(4,dp(7),4,dp(7));return t;}
   void section(String s){TextView t=txt(s,17,true);t.setTextColor(0xFF47794B);t.setPadding(4,dp(16),4,dp(6));root.addView(t);}
-  Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(0xFF47794B);b.setTextSize(13);b.setAllCaps(false);b.setPadding(dp(4),dp(2),dp(4),dp(2));b.setBackground(round(0xFFE5F2DE,dp(16)));return b;}
+  Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(0xFF47794B);b.setTextSize(13);b.setAllCaps(false);b.setPadding(dp(4),dp(2),dp(4),dp(2));b.setBackground(round(0xFFE5F2DE,dp(16)));b.setOnTouchListener((view,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_DOWN)view.animate().scaleX(.96f).scaleY(.96f).setDuration(80).start();else if(event.getAction()==android.view.MotionEvent.ACTION_UP||event.getAction()==android.view.MotionEvent.ACTION_CANCEL)view.animate().scaleX(1f).scaleY(1f).setDuration(120).start();return false;});return b;}
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
   void refresh(){
     if(stats!=null)stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas    ❤️ "+state.optInt("fun",75)+"%");
