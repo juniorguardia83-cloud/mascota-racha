@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"Lazo de cereza","Corona de princesa","Gafas estelares","Bufanda de nube","Flor de sakura","Diadema galaxia","Alas de hada","Collar de cristal","Disfraz abejorro","Gorra streetwear","Moño de corazón","Capa arcoíris","Vestido real","Traje astronauta","Pijama de osito","Chaqueta pastel","Vestido de gala","Armadura dragón","Kimono floral","Conjunto celestial"};
   int[] prices={120,450,180,160,140,220,680,520,390,260,300,750,1200,1800,850,980,2400,3200,1600,4500};
-  int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
+  int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox,bottomNav; ScrollView pageScroll;
   public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();if(state.optString("pet","").length()>0&&!state.optBoolean("pet_selected",false)){try{state.put("pet_selected",true);state.put("egg_hatched",true);prefs.edit().putString("state",state.toString()).apply();}catch(Exception ignored){}}missionIndex=Math.abs(day().hashCode())%missions.length;splashPage();new Handler().postDelayed(()->{buildUI();if(prefs.getBoolean("signed_in",false))syncCloud();},1500);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
   JSONObject load(){try{JSONObject saved=new JSONObject(prefs.getString("state","{}"));if(saved.has("pet")&&!saved.optString("pet","").isEmpty())saved.put("pet_selected",true);return saved;}catch(Exception e){return new JSONObject();}}
@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
     pageScroll=new ScrollView(this);pageScroll.setFillViewport(true);
     root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);
     pageScroll.addView(root);shell.addView(pageScroll,new LinearLayout.LayoutParams(-1,0,1));
-    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(round(0xFFFFFFFF,dp(22)));
+    bottomNav=new LinearLayout(this);LinearLayout nav=bottomNav;nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(round(0xFFFFFFFF,dp(22)));
     String[] labels={"⌂\nInicio","🐾\nMascota","🏡\nCasa","🛍️\nTienda","👤\nPerfil"};
     for(int i=0;i<labels.length;i++){final int tab=i;Button b=btn(labels[i]);b.setTextSize(10);nav.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));b.setOnClickListener(v->showTab(tab));}
     shell.addView(nav,new LinearLayout.LayoutParams(-1,dp(70)));setContentView(shell);showTab(0);
@@ -108,7 +108,7 @@ public class MainActivity extends Activity {
     showTabContent(tab);
   }
   void showTabContent(int tab){
-    root.removeAllViews();status=null;stats=null;missionText=null;walletText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
+    root.removeAllViews();if(bottomNav!=null)bottomNav.setVisibility(tab==2?View.GONE:View.VISIBLE);status=null;stats=null;missionText=null;walletText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
     if(tab==0&&!state.optBoolean("pet_selected",false))chooseStarterPage();else if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
     pageScroll.post(()->pageScroll.scrollTo(0,0));
   }
@@ -149,53 +149,79 @@ public class MainActivity extends Activity {
     c.setOnTouchListener((view,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_DOWN)view.animate().scaleX(.97f).scaleY(.97f).setDuration(90).start();else if(event.getAction()==android.view.MotionEvent.ACTION_UP||event.getAction()==android.view.MotionEvent.ACTION_CANCEL)view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();return false;});c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Widget compartido"))sharedInviteDialog();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
     return c;
   }
+  JSONArray allPets(){
+    JSONArray pets=state.optJSONArray("pets");if(pets==null){pets=new JSONArray();String first=pet();if(first.length()>0)pets.put(first);try{state.put("pets",pets);}catch(Exception ignored){}}
+    return pets;
+  }
+  JSONArray houseList(){
+    JSONArray houses=state.optJSONArray("houses");
+    if(houses==null){houses=new JSONArray();for(int i=0;i<5;i++)houses.put(new JSONArray());try{state.put("houses",houses);}catch(Exception ignored){}}
+    while(houses.length()<5)houses.put(new JSONArray());
+    return houses;
+  }
+  JSONArray petsInHouse(int house){
+    JSONArray houses=houseList();JSONArray list=houses.optJSONArray(house-1);return list==null?new JSONArray():list;
+  }
+  boolean isPetOwned(String name){JSONArray a=allPets();for(int i=0;i<a.length();i++)if(name.equals(a.optString(i)))return true;return false;}
+  int houseOfPet(String name){JSONArray houses=houseList();for(int h=0;h<houses.length();h++){JSONArray a=houses.optJSONArray(h);if(a!=null)for(int i=0;i<a.length();i++)if(name.equals(a.optString(i)))return h+1;}return 0;}
+  void assignPetToHouse(String name,int house){
+    try{
+      JSONArray owned=allPets();boolean found=false;for(int i=0;i<owned.length();i++)if(name.equals(owned.optString(i)))found=true;
+      if(!found){toast("Primero consigue esta mascota en Mascotas.");return;}
+      JSONArray houses=houseList();JSONArray target=houses.optJSONArray(house-1);if(target==null){target=new JSONArray();houses.put(house-1,target);}
+      int current=houseOfPet(name);if(current==house){toast("Esta mascota ya vive en esta casa.");return;}
+      if(target.length()>=4){toast("Esta casa ya tiene sus 4 mascotas. Elige otra casa.");return;}
+      for(int h=0;h<houses.length();h++){JSONArray list=houses.optJSONArray(h);if(list!=null){JSONArray clean=new JSONArray();for(int j=0;j<list.length();j++)if(!name.equals(list.optString(j)))clean.put(list.optString(j));houses.put(h,clean);}}
+      target=houses.optJSONArray(house-1);target.put(name);state.put("houses",houses);state.put("active_house",house);state.put("pet",name);save();toast(name+" ahora vive en Casa "+house+" 💚");showTab(2);
+    }catch(Exception e){toast("No se pudo cambiar la mascota de casa.");}
+  }
   void petsPage(){
-    header("Conoce y cuida a tus compañeros 🐾");
-    section("Elige a tu mascota");
-    String[] names={"🐶 Perrito","🐱 Gatito","🐰 Conejito","🐼 Pandita"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
-    JSONArray pets=state.optJSONArray("pets");if(pets==null){pets=new JSONArray();pets.put(pet());try{state.put("pets",pets);}catch(Exception ignored){}save();}
-    for(int i=0;i<names.length;i++){final String k=keys[i];boolean found=false;for(int j=0;j<pets.length();j++)if(k.equals(pets.optString(j)))found=true;final boolean owned=found;Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));b.setEnabled(owned);root.addView(b);b.setOnClickListener(v->{if(owned){put("pet",k);showTab(1);}else toast("Esta mascota aún no está desbloqueada 🥚");});}
-    section("💗 ¿Cómo te sientes hoy?");
-    Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
-    TextView petCollectionNote=txt("Tu compañero actual seguirá contigo mientras incubas y adoptas otra mascota. 💗",13,false);root.addView(petCollectionNote);
-    boolean incubating=state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true);
-    if(incubating){incubatorCard();root.addView(txt("Tu mascota anterior y sus cuidados siguen guardados. Mientras nace la nueva, esta pantalla muestra solo el huevo. 💗",13,false));return;}
-    Button adopt=btn("🥚 Adoptar otra mascota · Huevo de 3 horas");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
-    section("💗 Cuidados diarios");
-    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
-    String[] labels={"🍎 Dar comida","🎾 Jugar","🛁 Bañar","🌙 Descansar"};String[] keys2={"food","fun","clean","energy"};
-    for(int i=0;i<labels.length;i++){final String k=keys2[i];Button b=btn(labels[i]);root.addView(b);b.setOnClickListener(v->{care(k);refresh();});}
-    section("Estado de tu mascota");
-    String[] meters={"food","fun","clean","energy"};String[] meterLabels={"Hambre","Diversión","Higiene","Energía"};
-    for(int i=0;i<meters.length;i++){TextView t=txt(meterLabels[i]+"  ·  "+state.optInt(meters[i],70)+"%",14,true);root.addView(t);ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(state.optInt(meters[i],70));root.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
-    section("🎮 Tiempo de jugar");Button games=btn("Jugar minijuegos y ganar monedas");root.addView(games);games.setOnClickListener(v->gamesPage());
-    section("✨ Crecimiento");int xp=num("xp"),level=Math.max(1,num("level"));root.addView(txt("Nivel "+level+"  ·  "+xp+"/100 XP",16,true));
-    ProgressBar xpbar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);xpbar.setMax(100);xpbar.setProgress(xp%100);root.addView(xpbar,new LinearLayout.LayoutParams(-1,dp(12)));
+    header("Tus mascotas y nuevas adopciones");
+    section("🐾 Tu colección");
+    JSONArray pets=allPets();if(pets.length()==0)root.addView(txt("Todavía no tienes mascotas. ¡Abre tu primer huevo!",14,false));
+    for(int i=0;i<pets.length();i++){
+      final String name=pets.optString(i);LinearLayout row=card(0xFFFFE9F0);row.setOrientation(0);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(8),dp(4),dp(8),dp(4));
+      PetView preview=new PetView(this);preview.setPet(name);preview.setRoom(5);row.addView(preview,new LinearLayout.LayoutParams(dp(88),dp(94)));
+      LinearLayout info=new LinearLayout(this);info.setOrientation(1);info.addView(txt(name,16,true));int home=houseOfPet(name);info.addView(txt(home==0?"Aún no tiene casa":"Vive en Casa "+home,12,false));row.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+      Button place=btn(home==0?"Elegir casa":"Cambiar casa");place.setTextSize(10);row.addView(place);place.setOnClickListener(v->chooseHouseForPet(name));
+      root.addView(row);
+    }
+    Button adopt=btn("🥚 Conseguir otra mascota");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
+    section("💗 Cuidados de tu mascota activa");
+    petView=new PetView(this);petView.setPet(pet());petView.setRoom(5);petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(190)));
+    String[] labels={"Dar comida","Jugar","Bañar","Descansar"};String[] keys={"food","fun","clean","energy"};
+    for(int i=0;i<labels.length;i++){final String k=keys[i];Button care=btn(labels[i]);root.addView(care);care.setOnClickListener(v->{care(k);refresh();});}
+    section("Estado");String[] meters={"food","fun","clean","energy"};String[] names={"Hambre","Diversión","Higiene","Energía"};
+    for(int i=0;i<meters.length;i++){root.addView(txt(names[i]+" · "+state.optInt(meters[i],70)+"%",13,true));ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(state.optInt(meters[i],70));root.addView(p,new LinearLayout.LayoutParams(-1,dp(9)));}
+  }
+  void chooseHouseForPet(String name){
+    String[] options={"Casa 1","Casa 2","Casa 3","Casa 4","Casa 5"};
+    new AlertDialog.Builder(this).setTitle("¿Dónde vivirá "+name+"?").setItems(options,(d,w)->assignPetToHouse(name,w+1)).setNegativeButton("Cancelar",null).show();
   }
   void housePage(){
-    header("Nuestro hogar 🏡");
-    LinearLayout banner=card(0xFFFFE8B7);banner.setOrientation(1);banner.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(banner);
-    banner.addView(txt("🏠  La casita de "+pet(),19,true));banner.addView(txt("Elige dónde quieres pasar el rato",13,false));
-    LinearLayout rooms=new LinearLayout(this);rooms.setGravity(Gravity.CENTER);rooms.setPadding(0,dp(8),0,dp(8));root.addView(rooms);
-    String[] labels={"🌿 Salón","🍳 Cocina","🛁 Baño","🛏️ Dormitorio","🌷 Jardín"};int[] roomIds={2,4,3,1,0};
-    for(int i=0;i<labels.length;i++){final int ix=roomIds[i];Button b=btn(labels[i]);b.setTextSize(10);rooms.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));b.setOnClickListener(v->{put("room",ix);showTab(2);});}
-    section("✨ Tu habitación");
-    LinearLayout scene=card(0xFFFFDFAE);scene.setOrientation(1);scene.setPadding(dp(5),dp(5),dp(5),dp(5));root.addView(scene);
-    TextView roomName=txt(new String[]{"Jardín 🌷","Dormitorio 🛏️","Sala 🛋️","Baño 🫧","Cocina 🍳"}[Math.min(4,state.optInt("room",0))],17,true);roomName.setGravity(Gravity.CENTER);scene.addView(roomName);
-    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));scene.addView(petView,new LinearLayout.LayoutParams(-1,dp(330)));
-    petView.setOnTouchListener((v,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_UP){roomFurnitureAction(event.getX()/v.getWidth(),event.getY()/v.getHeight());}return true;});
-    section("Tus hogares · hasta 5 casas");houseSelector();
-    section("Toca los muebles para interactuar ✨");
-    root.addView(txt("La mesa, el sofá, la nevera, el inodoro, la ducha y la cama tienen acciones. ¡Prueba tocando cada objeto!",13,false));
-    Button fridge=btn("🧊 Abrir nevera · Comprar comida");root.addView(fridge);fridge.setOnClickListener(v->openFridge());
-    Button games=btn("🎮 Jugar con "+pet()+" y ganar monedas");root.addView(games);games.setOnClickListener(v->gamesPage());
-    Button wardrobe=btn("👗 Abrir armario y ropa");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
-  }
-  void houseSelector(){
-    LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER);root.addView(row);
-    int current=Math.max(1,state.optInt("active_house",1));
-    for(int i=1;i<=5;i++){final int n=i;Button b=btn("Casa "+i+(current==i?" ✓":""));b.setTextSize(10);row.addView(b,new LinearLayout.LayoutParams(0,dp(42),1));b.setOnClickListener(v->{try{state.put("active_house",n);JSONArray houses=state.optJSONArray("houses");if(houses==null){houses=new JSONArray();for(int k=0;k<5;k++)houses.put(new JSONArray());state.put("houses",houses);}save();showTab(2);}catch(Exception ignored){}});}
-    root.addView(txt("Cada casa admite hasta 4 mascotas · 5 casas en total",12,false));
+    int active=Math.max(1,Math.min(5,state.optInt("active_house",1)));
+    try{state.put("active_house",active);}catch(Exception ignored){}
+    root.setPadding(0,0,0,dp(8));root.setBackgroundColor(0xFFFFE7B5);
+    LinearLayout top=new LinearLayout(this);top.setPadding(dp(12),dp(8),dp(12),dp(4));top.setGravity(Gravity.CENTER_VERTICAL);root.addView(top);
+    TextView title=txt("Casa "+active,22,true);title.setTextColor(0xFF784A2C);top.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+    Button exit=btn("Salir ✕");top.addView(exit);exit.setOnClickListener(v->{root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);showTab(0);});
+    LinearLayout houseTabs=new LinearLayout(this);houseTabs.setPadding(dp(7),dp(4),dp(7),dp(5));root.addView(houseTabs);
+    for(int i=1;i<=5;i++){final int h=i;Button b=btn("Casa "+i);b.setTextSize(10);houseTabs.addView(b,new LinearLayout.LayoutParams(0,dp(42),1));b.setAlpha(i==active?1f:.65f);b.setOnClickListener(v->{state.put("active_house",h);save();showTab(2);});}
+    String[] labels={"Salón","Cocina","Baño","Dormitorio","Jardín"};int[] roomIds={2,4,3,1,0};
+    LinearLayout rooms=new LinearLayout(this);rooms.setPadding(dp(7),0,dp(7),dp(5));root.addView(rooms);
+    for(int i=0;i<labels.length;i++){final int room=roomIds[i];Button b=btn(labels[i]);b.setTextSize(10);rooms.addView(b,new LinearLayout.LayoutParams(0,dp(40),1));b.setOnClickListener(v->{put("room",room);showTab(2);});}
+    FrameLayout scene=new FrameLayout(this);scene.setBackground(round(0xFFFFD18A,dp(18)));LinearLayout.LayoutParams sceneLp=new LinearLayout.LayoutParams(-1,0,1);sceneLp.setMargins(dp(7),0,dp(7),dp(6));root.addView(scene,sceneLp);
+    PetView background=new PetView(this);background.setPet("Osito");background.setRoom(state.optInt("room",2));background.setOutfit(-1);scene.addView(background,new FrameLayout.LayoutParams(-1,-1));
+    JSONArray residents=petsInHouse(active);
+    if(residents.length()==0){TextView empty=txt("Tu casa está esperando a sus mascotas",16,true);empty.setGravity(Gravity.CENTER);FrameLayout.LayoutParams ep=new FrameLayout.LayoutParams(-1,-2,Gravity.CENTER);scene.addView(empty,ep);}
+    else{
+      LinearLayout residentsRow=new LinearLayout(this);residentsRow.setGravity(Gravity.CENTER);residentsRow.setOrientation(0);FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(-1,dp(190),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);rp.bottomMargin=dp(10);scene.addView(residentsRow,rp);
+      for(int i=0;i<residents.length();i++){String name=residents.optString(i);LinearLayout slot=new LinearLayout(this);slot.setOrientation(1);slot.setGravity(Gravity.CENTER);PetView animal=new PetView(this);animal.setPet(name);animal.setRoom(5);animal.setOutfit(name.equals(pet())?state.optInt("outfit",-1):-1);slot.addView(animal,new LinearLayout.LayoutParams(0,dp(150),1));TextView caption=txt(name,12,true);caption.setTextColor(0xFF50342B);caption.setGravity(Gravity.CENTER);slot.addView(caption);residentsRow.addView(slot,new LinearLayout.LayoutParams(0,-1,1));}
+    }
+    LinearLayout bottom=new LinearLayout(this);bottom.setGravity(Gravity.CENTER);bottom.setPadding(dp(7),dp(3),dp(7),dp(3));bottom.setBackground(round(0xFFFFF4D7,dp(18)));root.addView(bottom);
+    String[] actions={"Salón","Comida","Baño","Dormir","Mascotas"};
+    for(int i=0;i<actions.length;i++){final int ix=i;Button b=btn(actions[i]);b.setTextSize(10);bottom.addView(b,new LinearLayout.LayoutParams(0,dp(54),1));b.setOnClickListener(v->{if(ix==4){root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);showTab(1);}else if(ix==1)openFridge();else{put("room",new int[]{2,4,3,1}[ix]);showTab(2);}});}
+    TextView count=txt("Mascotas en esta casa: "+residents.length()+"/4",12,true);count.setGravity(Gravity.CENTER);root.addView(count);
   }
   void sharedInviteDialog(){
     String code=prefs.getString("shared_invite_code",null);
