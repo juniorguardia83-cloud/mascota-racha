@@ -194,12 +194,17 @@ public class MainActivity extends Activity {
     shopBox=new LinearLayout(this);shopBox.setOrientation(1);root.addView(shopBox);renderShopItems(0);
     section("🎒 Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);refresh();
   }
-  void renderShopItems(int category){if(shopBox==null)return;shopBox.removeAllViews();ArrayList<Integer> ids=new ArrayList<>();for(int i=0;i<clothes.length;i++){boolean show=category==0||(category==1&&(i==0||i==1||i==2||i==5||i==9||i==10))||(category==2&&(i==4||i==6||i==7||i==8||i==11))||(category==3&&i==3);if(show)ids.add(i);}
-    LinearLayout row=null;for(int n=0;n<ids.size();n++){if(n%2==0){row=new LinearLayout(this);row.setOrientation(0);row.setGravity(Gravity.CENTER);shopBox.addView(row);}final int ix=ids.get(n);LinearLayout item=card(0xFFFFF0E5);item.setOrientation(1);item.setPadding(dp(7),dp(7),dp(7),dp(9));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(260),1);lp.setMargins(dp(4),dp(5),dp(4),dp(5));row.addView(item,lp);
-      TextView name=txt(clothes[ix],14,true);name.setGravity(Gravity.CENTER);name.setMaxLines(1);item.addView(name);
-      FrameLayout stage=new FrameLayout(this);stage.setBackground(round(0xFFFFE4D5,dp(17)));PetView preview=new PetView(this);preview.setPet(pet());preview.setOutfit(ix);preview.setRoom(1);stage.addView(preview,new FrameLayout.LayoutParams(-1,-1));item.addView(stage,new LinearLayout.LayoutParams(-1,dp(135)));
-      TextView price=txt("🪙 "+prices[ix],16,true);price.setTextColor(0xFF9A6A2F);price.setGravity(Gravity.CENTER);item.addView(price);
-      Button b=btn(isOwned(ix)?"✓ En tu armario":"Probar y comprar");b.setTextSize(11);item.addView(b,new LinearLayout.LayoutParams(-1,dp(42)));b.setOnClickListener(v->{if(isOwned(ix)){put("outfit",ix);refresh();toast("¡Look equipado! 💖");}else buy(ix);});
+  void renderShopItems(int category){
+    if(shopBox==null)return;shopBox.removeAllViews();ArrayList<Integer> ids=new ArrayList<>();
+    for(int i=0;i<clothes.length;i++){boolean show=category==0||(category==1&&(i==0||i==1||i==2||i==5||i==9||i==10))||(category==2&&(i==4||i==6||i==7||i==8||i==11))||(category==3&&i==3);if(show)ids.add(i);}
+    android.widget.GridLayout grid=new android.widget.GridLayout(this);grid.setColumnCount(3);grid.setUseDefaultMargins(false);shopBox.addView(grid);
+    int width=getResources().getDisplayMetrics().widthPixels/3-dp(25);
+    for(int n=0;n<ids.size();n++){final int ix=ids.get(n);LinearLayout item=card(0xFFFFF0E5);item.setOrientation(1);item.setGravity(Gravity.CENTER);item.setPadding(dp(3),dp(5),dp(3),dp(6));
+      LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(width,dp(205));lp.setMargins(dp(3),dp(5),dp(3),dp(5));grid.addView(item,lp);
+      TextView name=txt(clothes[ix],11,true);name.setGravity(Gravity.CENTER);name.setMaxLines(2);name.setMinHeight(dp(35));item.addView(name,new LinearLayout.LayoutParams(-1,dp(38)));
+      FrameLayout stage=new FrameLayout(this);stage.setBackground(round(0xFFFFE4D5,dp(14)));PetView preview=new PetView(this);preview.setPet(pet());preview.setOutfit(ix);preview.setRoom(1);stage.addView(preview,new FrameLayout.LayoutParams(-1,-1));item.addView(stage,new LinearLayout.LayoutParams(-1,dp(103)));
+      TextView price=txt("🪙 "+prices[ix],13,true);price.setTextColor(0xFF9A6A2F);price.setGravity(Gravity.CENTER);item.addView(price,new LinearLayout.LayoutParams(-1,dp(25)));
+      Button b=btn(isOwned(ix)?"✓ Guardado":"Comprar");b.setTextSize(10);item.addView(b,new LinearLayout.LayoutParams(-1,dp(34)));b.setOnClickListener(v->{if(isOwned(ix)){put("outfit",ix);refresh();toast("¡Look equipado! 💖");}else buy(ix);});
     }
   }
   boolean isOwned(int ix){JSONArray owned=state.optJSONArray("owned");if(owned!=null)for(int i=0;i<owned.length();i++)if(owned.optInt(i)==ix)return true;return false;}
