@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
-  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;splashPage();new Handler().postDelayed(()->{buildUI();handleAuthIntent(getIntent());if(prefs.getBoolean("signed_in",false))syncCloud();},1500);}
+  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();if(state.optString("pet","").length()>0&&!state.optBoolean("pet_selected",false)){try{state.put("pet_selected",true);state.put("egg_hatched",true);prefs.edit().putString("state",state.toString()).apply();}catch(Exception ignored){}}missionIndex=Math.abs(day().hashCode())%missions.length;splashPage();new Handler().postDelayed(()->{buildUI();if(prefs.getBoolean("signed_in",false))syncCloud();},1500);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
   JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
@@ -48,8 +48,7 @@ public class MainActivity extends Activity {
     LinearLayout panel=card(0xFFFFFFFF);panel.setOrientation(1);panel.setPadding(dp(18),dp(18),dp(18),dp(18));LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,-2);pp.topMargin=dp(26);page.addView(panel,pp);
     panel.addView(txt("¡Bienvenido a tu mundo!",22,true));
     panel.addView(txt("Inicia sesión para guardar tus mascotas, recuerdos y progreso.",14,false));
-    Button google=btn("🌈  Continuar con Google");google.setTextSize(16);panel.addView(google,new LinearLayout.LayoutParams(-1,dp(54)));google.setOnClickListener(v->googleLogin());
-    TextView divider=txt("o entra con tu correo",12,false);divider.setGravity(Gravity.CENTER);panel.addView(divider);
+    TextView divider=txt("Entra con tu correo electrónico",13,true);divider.setGravity(Gravity.CENTER);panel.addView(divider);
     emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType( android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);panel.addView(emailInput);
     passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña");passwordInput.setInputType( android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);panel.addView(passwordInput);
     termsCheck=new CheckBox(this);termsCheck.setText("Acepto los términos y condiciones");termsCheck.setTextColor(0xFF527653);panel.addView(termsCheck);
@@ -78,7 +77,8 @@ public class MainActivity extends Activity {
   }
   void adoptAnotherPet(){
     String[] names={"Perrito 🐶","Gatito 🐱","Conejito 🐰","Pandita 🐼"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
-    new AlertDialog.Builder(this).setTitle("Elige un nuevo huevo 🥚").setItems(names,(d,w)->{try{state.put("egg_pet",keys[w]);state.put("egg_started",System.currentTimeMillis());state.put("egg_hatched",false);}catch(Exception ignored){}save();eggPage();}).setNegativeButton("Cancelar",null).show();
+    if(state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true)){toast("Ya tienes un huevo incubándose. ¡No pierdas su progreso! 🥚");showTab(1);return;}
+    new AlertDialog.Builder(this).setTitle("Elige un nuevo huevo 🥚").setItems(names,(d,w)->{try{state.put("egg_pet",keys[w]);state.put("egg_started",System.currentTimeMillis());state.put("egg_hatched",false);}catch(Exception ignored){}save();showTab(1);}).setNegativeButton("Cancelar",null).show();
   }
   void eggPage(){
     root.removeAllViews();header("¡Tu huevo está incubándose! 🥚");
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
     TextView hint=txt("Cuida la espera: cuando termine, toca el huevo para conocer a tu mascota. 💗",14,false);hint.setGravity(Gravity.CENTER);card.addView(hint);
     Runnable tick=new Runnable(){public void run(){if(timer.getParent()==null)return;long left=10800000L-(System.currentTimeMillis()-state.optLong("egg_started",System.currentTimeMillis()));if(left<=0){timer.setText("¡Ya quiere nacer! 🎉");egg.setText("🐣");egg.setOnClickListener(v->hatchEgg());hint.setText("¡Toca el pollito para abrir el huevo!");}else{long sec=left/1000;timer.setText(String.format(Locale.getDefault(),"%02d:%02d:%02d",sec/3600,(sec%3600)/60,sec%60));egg.setText("🥚");new Handler().postDelayed(this,1000);}}};tick.run();
   }
-  void hatchEgg(){String chosen=state.optString("egg_pet","Perrito");try{state.put("pet",chosen);state.put("egg_hatched",true);state.put("food",85);state.put("fun",90);state.put("clean",100);state.put("energy",100);}catch(Exception ignored){}save();toast("¡"+chosen+" ha nacido! Bienvenido a casa 💗");showTab(0);}
+  void hatchEgg(){String chosen=state.optString("egg_pet","Perrito");try{JSONArray pets=state.optJSONArray("pets");if(pets==null)pets=new JSONArray();boolean exists=false;for(int i=0;i<pets.length();i++)if(chosen.equals(pets.optString(i)))exists=true;if(!exists)pets.put(chosen);state.put("pets",pets);if(state.optString("pet","").isEmpty()){state.put("pet",chosen);state.put("food",85);state.put("fun",90);state.put("clean",100);state.put("energy",100);}state.put("pet_selected",true);state.put("egg_hatched",true);state.remove("egg_started");state.remove("egg_pet");}catch(Exception ignored){}save();toast("¡"+chosen+" ha nacido y se unió a tu familia! 💗");showTab(0);}
 
   void header(String subtitle){
     LinearLayout h=new LinearLayout(this);h.setGravity(Gravity.CENTER_VERTICAL);
@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
   }
   void showTabContent(int tab){
     root.removeAllViews();status=null;stats=null;missionText=null;walletText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
-    if(tab==0&&!state.optBoolean("pet_selected",false))chooseStarterPage();else if(tab==0&&!state.optBoolean("egg_hatched",false)&&state.optLong("egg_started",0)>0)eggPage();else if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
+    if(tab==0&&!state.optBoolean("pet_selected",false))chooseStarterPage();else if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
     pageScroll.post(()->pageScroll.scrollTo(0,0));
   }
   void homePage(){
@@ -127,9 +127,6 @@ public class MainActivity extends Activity {
     LinearLayout row3=new LinearLayout(this);row3.setOrientation(0);row3.setGravity(Gravity.CENTER);root.addView(row3);
     row3.addView(dashCard("Te extraño","Comparte un mensaje","💌",0xFFF9DDF2,4),new LinearLayout.LayoutParams(0,dp(158),1));
     row3.addView(dashCard("Mi estado","Tu perfil y recuerdos","🌿",0xFFDDE4FF,4),new LinearLayout.LayoutParams(0,dp(158),1));
-    LinearLayout row4=new LinearLayout(this);row4.setOrientation(0);row4.setGravity(Gravity.CENTER);root.addView(row4);
-    row4.addView(dashCard("Minijuegos","Juega y gana monedas","🎮",0xFFDDF4F0,5),new LinearLayout.LayoutParams(0,dp(150),1));
-    row4.addView(dashCard("Estado de ánimo","Expresa cómo te sientes","😊",0xFFFFE1EF,1),new LinearLayout.LayoutParams(0,dp(150),1));
     section("🐾 Tu compañero de hoy");
     LinearLayout petCard=card(0xFFF1F8E9);petCard.setOrientation(1);petCard.setPadding(dp(10),dp(6),dp(10),dp(8));root.addView(petCard);
     petCard.addView(txt("¡"+pet()+" te está esperando!",17,true));
@@ -155,6 +152,7 @@ public class MainActivity extends Activity {
     for(int i=0;i<names.length;i++){final String k=keys[i];Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("pet",k);showTab(1);});}
     section("💗 ¿Cómo te sientes hoy?");
     Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
+    if(state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true))incubatorCard();
     Button adopt=btn("🥚 Adoptar otra mascota · Huevo de 3 horas");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
     section("💗 Cuidados diarios");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
@@ -184,12 +182,27 @@ public class MainActivity extends Activity {
     Button wardrobe=btn("👗 Abrir armario y ropa");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
   }
   void shopPage(){
-    header("Compra cositas con tus monedas 🛍️");
-    LinearLayout wallet=card(0xFFFFF0D5);wallet.setPadding(dp(12),dp(6),dp(12),dp(6));wallet.addView(txt("Tu saldo: "+num("coins")+" 🪙",17,true));root.addView(wallet);
-    section("✨ Accesorios para tu mascota");
-    for(int i=0;i<clothes.length;i++){final int ix=i;LinearLayout item=card(0xFFFFEBDD);item.setOrientation(1);item.setPadding(dp(8),dp(6),dp(8),dp(8));TextView name=txt(clothes[i],15,true);name.setGravity(Gravity.CENTER);item.addView(name);PetView preview=new PetView(this);preview.setPet(pet());preview.setOutfit(ix);preview.setRoom(1);item.addView(preview,new LinearLayout.LayoutParams(-1,dp(132)));Button b=btn("Comprar · "+prices[i]+" 🪙");item.addView(b);root.addView(item);b.setOnClickListener(v->buy(ix));}
+    header("La boutique de MimoPets ✨");
+    LinearLayout hero=card(0xFFFFE5EC);hero.setOrientation(1);hero.setPadding(dp(14),dp(10),dp(14),dp(10));root.addView(hero);
+    TextView heroTitle=txt("Un look nuevo para tu mejor amigo 💗",19,true);hero.addView(heroTitle);
+    hero.addView(txt("Prueba accesorios 2D, compra con tus monedas y equípalos al instante.",13,false));
+    LinearLayout balance=card(0xFFFFF2CE);balance.setPadding(dp(12),dp(5),dp(12),dp(5));balance.setGravity(Gravity.CENTER_VERTICAL);balance.addView(txt("🪙 "+num("coins")+" monedas     💎 "+num("gems")+" gemas",16,true));root.addView(balance);
+    section("Explorar colección");
+    LinearLayout filters=new LinearLayout(this);filters.setOrientation(0);filters.setGravity(Gravity.CENTER);root.addView(filters);
+    String[] categories={"Todo","Sombreros","Accesorios","Ropa"};int[] ids={0,1,2,3};
+    for(int i=0;i<categories.length;i++){final int category=ids[i];Button chip=btn(categories[i]);chip.setTextSize(11);filters.addView(chip,new LinearLayout.LayoutParams(0,dp(42),1));chip.setOnClickListener(v->renderShopItems(category));}
+    shopBox=new LinearLayout(this);shopBox.setOrientation(1);root.addView(shopBox);renderShopItems(0);
     section("🎒 Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);refresh();
   }
+  void renderShopItems(int category){if(shopBox==null)return;shopBox.removeAllViews();ArrayList<Integer> ids=new ArrayList<>();for(int i=0;i<clothes.length;i++){boolean show=category==0||(category==1&&(i==0||i==1||i==2||i==5||i==9||i==10))||(category==2&&(i==4||i==6||i==7||i==8||i==11))||(category==3&&i==3);if(show)ids.add(i);}
+    LinearLayout row=null;for(int n=0;n<ids.size();n++){if(n%2==0){row=new LinearLayout(this);row.setOrientation(0);row.setGravity(Gravity.CENTER);shopBox.addView(row);}final int ix=ids.get(n);LinearLayout item=card(0xFFFFF0E5);item.setOrientation(1);item.setPadding(dp(7),dp(7),dp(7),dp(9));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(260),1);lp.setMargins(dp(4),dp(5),dp(4),dp(5));row.addView(item,lp);
+      TextView name=txt(clothes[ix],14,true);name.setGravity(Gravity.CENTER);name.setMaxLines(1);item.addView(name);
+      FrameLayout stage=new FrameLayout(this);stage.setBackground(round(0xFFFFE4D5,dp(17)));PetView preview=new PetView(this);preview.setPet(pet());preview.setOutfit(ix);preview.setRoom(1);stage.addView(preview,new FrameLayout.LayoutParams(-1,-1));item.addView(stage,new LinearLayout.LayoutParams(-1,dp(135)));
+      TextView price=txt("🪙 "+prices[ix],16,true);price.setTextColor(0xFF9A6A2F);price.setGravity(Gravity.CENTER);item.addView(price);
+      Button b=btn(isOwned(ix)?"✓ En tu armario":"Probar y comprar");b.setTextSize(11);item.addView(b,new LinearLayout.LayoutParams(-1,dp(42)));b.setOnClickListener(v->{if(isOwned(ix)){put("outfit",ix);refresh();toast("¡Look equipado! 💖");}else buy(ix);});
+    }
+  }
+  boolean isOwned(int ix){JSONArray owned=state.optJSONArray("owned");if(owned!=null)for(int i=0;i<owned.length();i++)if(owned.optInt(i)==ix)return true;return false;}
   void profilePage(){
     header("Tu espacio seguro y tus recuerdos ☁️");
     LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(16),dp(12),dp(16),dp(12));root.addView(account);
@@ -201,14 +214,14 @@ public class MainActivity extends Activity {
     EditText displayName=new EditText(this);displayName.setSingleLine(true);displayName.setHint("Tu nombre");displayName.setText(prefs.getString("profile_name",""));account.addView(displayName);
     Button saveProfile=btn("Guardar perfil");account.addView(saveProfile);saveProfile.setOnClickListener(v->{prefs.edit().putString("profile_name",displayName.getText().toString().trim()).apply();toast("Perfil guardado 💚");});
     account.addView(txt("Cuenta: "+prefs.getString("user_email","Sesión iniciada"),12,false));
-    account.addView(txt("Entra para guardar tu mascota y continuar tu aventura en otros dispositivos.",13,false));
+
     TextView session=txt("✓ Sesión iniciada",17,true);session.setTextColor(0xFF3C8B55);account.addView(session);
     TextView sessionInfo=txt("Tu cuenta está conectada. Tus monedas, mascotas y progreso se guardan en este dispositivo y se sincronizan con Supabase.",13,false);account.addView(sessionInfo);
     Button signOut=btn("Cerrar sesión");account.addView(signOut,new LinearLayout.LayoutParams(-1,dp(48)));
     signOut.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("¿Cerrar sesión?").setMessage("Tu progreso guardado permanecerá en este teléfono.").setNegativeButton("Cancelar",null).setPositiveButton("Cerrar sesión",(d,w)->{prefs.edit().putBoolean("signed_in",false).remove("token").remove("uid").apply();buildUI();}).show());
     section("📊 Tu aventura");root.addView(txt("🔥 Racha: "+num("streak")+" días",16,true));root.addView(txt("⭐ Nivel: "+Math.max(1,num("level")),16,true));root.addView(txt("🪙 Monedas: "+num("coins"),16,true));
     Button share=btn("📤 Compartir mi mascota");root.addView(share);share.setOnClickListener(v->sharePet());
-    status=txt("Tus avances se guardan en este teléfono. Al iniciar sesión puedes vincularlos a tu cuenta.",12,false);root.addView(status);
+    status=txt("☁️ Tu aventura está vinculada a tu cuenta.",12,false);root.addView(status);
   }
   void showTerms(){
     String text="MIMOPETS · TÉRMINOS Y PRIVACIDAD\\n\\n1. Datos de cuenta: usamos tu correo y los datos de autenticación gestionados por Supabase para crear y proteger tu cuenta. Si eliges Google, Google procesa el acceso según sus propias condiciones.\\n\\n2. Datos del juego: guardamos el nombre de tu mascota, monedas, racha, nivel, artículos, habitación y progreso para conservar tu partida y sincronizarla cuando inicies sesión.\\n\\n3. Uso: estos datos se utilizan para iniciar sesión, guardar/restaurar tu partida y mantener las funciones del juego. No vendemos tus datos ni los usamos para publicidad personalizada.\\n\\n4. Almacenamiento: los datos de cuenta y sincronización se procesan mediante Supabase. El dispositivo también puede conservar una copia local.\\n\\n5. Seguridad y control: no compartas tu contraseña. Puedes dejar de usar la app cuando quieras; para solicitar eliminación de cuenta/datos, contacta al responsable de la app.\\n\\n6. Menores: si eres menor, pide a tu madre, padre o tutor que revise estos términos.\\n\\nAl continuar declaras que has leído esta información.";
@@ -299,6 +312,14 @@ public class MainActivity extends Activity {
       runOnUiThread(()->{buildUI();showTab(0);if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
     }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo completar: "+msg);});}}).start();
   }
+  void incubatorCard(){
+    LinearLayout eggCard=card(0xFFFFEBC8);eggCard.setOrientation(1);eggCard.setGravity(Gravity.CENTER);eggCard.setPadding(dp(12),dp(10),dp(12),dp(10));root.addView(eggCard);
+    TextView egg=txt("🥚",54,true);egg.setGravity(Gravity.CENTER);eggCard.addView(egg);
+    TextView title=txt("Huevo de "+state.optString("egg_pet","mascota"),17,true);title.setGravity(Gravity.CENTER);eggCard.addView(title);
+    TextView timer=txt("",20,true);timer.setGravity(Gravity.CENTER);eggCard.addView(timer);
+    TextView hint=txt("Tu mascota actual sigue contigo mientras este huevo incuba.",12,false);hint.setGravity(Gravity.CENTER);eggCard.addView(hint);
+    Runnable tick=new Runnable(){public void run(){if(timer.getParent()==null)return;long left=10800000L-(System.currentTimeMillis()-state.optLong("egg_started",System.currentTimeMillis()));if(left<=0){timer.setText("¡Listo para nacer! 🎉");egg.setText("🐣");Button hatch=btn("Abrir huevo");eggCard.addView(hatch);hatch.setOnClickListener(v->hatchEgg());}else{long sec=left/1000;timer.setText(String.format(Locale.getDefault(),"%02d:%02d:%02d",sec/3600,(sec%3600)/60,sec%60));new Handler().postDelayed(this,1000);}}};tick.run();
+  }
   void showOtpDialog(String email){
     LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setPadding(dp(18),dp(8),dp(18),dp(4));
     TextView info=txt("Escribe el código de 6 dígitos que enviamos a:",14,false);box.addView(info);
@@ -334,14 +355,7 @@ public class MainActivity extends Activity {
     String email=emailInput.getText().toString().trim();if(!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()){toast("Escribe primero tu correo electrónico.");return;}
     new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/recover?redirect_to=mimopets://auth-callback").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("email",email).toString().getBytes("UTF-8"));int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->{if(status!=null)status.setText("Si el correo existe, recibirás un enlace para restablecer la contraseña.");toast("Revisa tu correo 💌");});}catch(Exception e){runOnUiThread(()->toast("No se pudo enviar el enlace: "+e.getMessage()));}}).start();
   }
-  void googleLogin(){
-    try{
-      String redirect=URLEncoder.encode("mimopets://auth-callback","UTF-8");
-      String url=URL+"/auth/v1/authorize?provider=google&redirect_to="+redirect;
-      Intent browser=new Intent(Intent.ACTION_VIEW,Uri.parse(url));startActivity(browser);
-      if(status!=null)status.setText("Abriendo Google… Al elegir tu cuenta volverás aquí.");
-    }catch(Exception e){toast("No se pudo abrir Google: "+e.getMessage());}
-  }
+  
   @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
     super.onActivityResult(requestCode,resultCode,data);
     if(requestCode==410&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null){
@@ -355,7 +369,7 @@ public class MainActivity extends Activity {
     Uri data=intent.getData();String fragment=data.getFragment();String token=null;String type="";
     if(fragment!=null)for(String part:fragment.split("&")){String[] kv=part.split("=",2);if(kv.length==2){if(kv[0].equals("access_token"))token=Uri.decode(kv[1]);if(kv[0].equals("type"))type=Uri.decode(kv[1]);}}
     if(token==null)token=data.getQueryParameter("access_token");
-    if(token==null){String error=data.getQueryParameter("error_description");if(error!=null)runOnUiThread(()->toast("Google no pudo completar el acceso: "+error));return;}
+    if(token==null){String error=data.getQueryParameter("error_description");if(error!=null)runOnUiThread(()->toast("No se pudo completar el acceso: "+error));return;}
     final String access=token;
     if("recovery".equals(type)){prefs.edit().putString("recovery_token",access).apply();runOnUiThread(()->newPasswordDialog(access));return;}
     new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);int code=c.getResponseCode();if(code<200||code>=300)throw new Exception(readResponse(c));JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{buildUI();showTab(0);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta: "+e.getMessage()));}}).start();
