@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
 android {
     namespace 'com.mascotaracha'
     compileSdk 35
@@ -10,7 +12,7 @@ android {
         applicationId 'com.mascotaracha'
         minSdk 23
         targetSdk 28
-        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
-        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '1'}"
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
     }
 }
