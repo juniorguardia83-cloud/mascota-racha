@@ -1,14 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
  android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent"
- android:orientation="vertical" android:gravity="center_vertical" android:padding="14dp"
+ android:orientation="vertical" android:gravity="center" android:padding="10dp"
  android:background="@drawable/widget_bg">
  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-  android:text="✿ MI PEQUEÑO COMPAÑERO" android:textStyle="bold" android:textSize="10sp" android:letterSpacing="0.06" android:textColor="#47794B"/>
- <TextView android:id="@+id/widget_pet" android:layout_width="wrap_content" android:layout_height="wrap_content"
-  android:text="🐶 Perrito" android:textSize="25sp" android:textStyle="bold" android:textColor="#365C42" android:paddingTop="4dp"/>
- <TextView android:id="@+id/widget_stats" android:layout_width="wrap_content" android:layout_height="wrap_content"
-  android:text="🔥 0 días  ·  🪙 0" android:textSize="13sp" android:textStyle="bold" android:textColor="#8B6680" android:paddingTop="3dp"/>
+  android:text="♡  MI MASCOTA  ♡" android:textStyle="bold" android:textSize="10sp"
+  android:textColor="#47794B"/>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+  android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="3dp">
+  <TextView android:id="@+id/widget_face" android:layout_width="wrap_content" android:layout_height="wrap_content"
+   android:text="🐱" android:textSize="48sp" android:gravity="center"/>
+  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+   android:orientation="vertical" android:paddingLeft="8dp" android:gravity="center_vertical">
+   <TextView android:id="@+id/widget_pet" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:text="Gatito" android:textSize="17sp" android:textStyle="bold" android:textColor="#365C42"/>
+   <TextView android:id="@+id/widget_message" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:text="¡Hola! ¿Jugamos? 💗" android:textSize="12sp" android:textColor="#654C62"
+    android:background="@drawable/widget_bubble" android:padding="7dp"/>
+  </LinearLayout>
+ </LinearLayout>
+ <TextView android:id="@+id/widget_stats" android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:text="🔥 0 días  ·  🪙 0 monedas" android:textSize="11sp" android:textStyle="bold"
+  android:textColor="#8B6680" android:gravity="center"/>
  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-  android:text="Toca aquí para cuidar a tu mascota  ✨" android:textSize="10sp" android:textColor="#66846A" android:paddingTop="5dp"/>
+  android:text="Tócame para entrar a casa  ✨" android:textSize="9sp" android:textColor="#66846A"/>
 </LinearLayout>
