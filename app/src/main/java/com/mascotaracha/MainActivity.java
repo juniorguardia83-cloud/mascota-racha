@@ -84,12 +84,12 @@ public class MainActivity extends Activity {
   void housePage(){
     header("Un hogar bonito para tu mascota 🏡");
     section("Elige una habitación");
-    String[] rooms={"🌷 Jardín","🛏️ Dormitorio","🛋️ Sala","🫧 Baño"};
+    String[] rooms={"🛋️ Salón","🍳 Cocina","🫧 Baño","🛏️ Dormitorio","🌷 Jardín"};
     for(int i=0;i<rooms.length;i++){final int ix=i;Button b=btn(rooms[i]+(state.optInt("room",0)==i?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("room",ix);showTab(2);});}
     section("Así se ve tu habitación");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(300)));
-    root.addView(txt("Cada habitación tiene su propio ambiente y decoración. Cambia de espacio cuando quieras.",13,false));
-    section("🎀 Personaliza a tu compañero");Button wardrobe=btn("Abrir mi armario");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
+    root.addView(txt("Tu casa cambia de ambiente según la habitación. ¡Entra, cuida y decora!",13,false));
+    section("🏠 Otras zonas de tu casa");String[] roomsButtons={"🛋️ Salón","🍳 Cocina","🫧 Baño","🛏️ Dormitorio","🌷 Jardín"};for(int i=0;i<roomsButtons.length;i++){final int ix=i;Button zone=btn(roomsButtons[i]);root.addView(zone);zone.setOnClickListener(v->{put("room",ix);showTab(2);});}\n    section("🎀 Personaliza a tu compañero");Button wardrobe=btn("Abrir mi armario");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
   }
   void shopPage(){
     header("Compra cositas con tus monedas 🛍️");
