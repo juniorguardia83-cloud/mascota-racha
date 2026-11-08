@@ -23,7 +23,7 @@ public class MainActivity extends Activity {
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
   public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();if(state.optString("pet","").length()>0&&!state.optBoolean("pet_selected",false)){try{state.put("pet_selected",true);state.put("egg_hatched",true);prefs.edit().putString("state",state.toString()).apply();}catch(Exception ignored){}}missionIndex=Math.abs(day().hashCode())%missions.length;splashPage();new Handler().postDelayed(()->{buildUI();if(prefs.getBoolean("signed_in",false))syncCloud();},1500);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
-  JSONObject load(){try{JSONObject saved=new JSONObject(prefs.getString("state","{}"));if(saved.has("pet")&&!saved.optString("pet","").isEmpty()){saved.put("pet_selected",true);saved.put("egg_hatched",true);saved.remove("egg_started");saved.remove("egg_pet");}return saved;}catch(Exception e){return new JSONObject();}}
+  JSONObject load(){try{JSONObject saved=new JSONObject(prefs.getString("state","{}"));if(saved.has("pet")&&!saved.optString("pet","").isEmpty())saved.put("pet_selected",true);return saved;}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
   void put(String k,Object v){try{state.put(k,v);}catch(Exception e){}save();}
   void save(){prefs.edit().putString("state",state.toString()).putLong("state_saved_at",System.currentTimeMillis()).apply();refreshWidget();if(prefs.getBoolean("signed_in",false))syncCloud();}
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
     TextView hint=txt("Cuida la espera: cuando termine, toca el huevo para conocer a tu mascota. 💗",14,false);hint.setGravity(Gravity.CENTER);card.addView(hint);
     Runnable tick=new Runnable(){public void run(){if(timer.getParent()==null)return;long left=10800000L-(System.currentTimeMillis()-state.optLong("egg_started",System.currentTimeMillis()));if(left<=0){timer.setText("¡Ya quiere nacer! 🎉");egg.setText("🐣");egg.setOnClickListener(v->hatchEgg());hint.setText("¡Toca el pollito para abrir el huevo!");}else{long sec=left/1000;timer.setText(String.format(Locale.getDefault(),"%02d:%02d:%02d",sec/3600,(sec%3600)/60,sec%60));egg.setText("🥚");new Handler().postDelayed(this,1000);}}};tick.run();
   }
-  void hatchEgg(){String chosen=state.optString("egg_pet","Perrito");try{JSONArray pets=state.optJSONArray("pets");if(pets==null)pets=new JSONArray();boolean exists=false;for(int i=0;i<pets.length();i++)if(chosen.equals(pets.optString(i)))exists=true;if(!exists)pets.put(chosen);state.put("pets",pets);if(state.optString("pet","").isEmpty()){state.put("pet",chosen);state.put("food",85);state.put("fun",90);state.put("clean",100);state.put("energy",100);}state.put("pet_selected",true);state.put("egg_hatched",true);state.remove("egg_started");state.remove("egg_pet");}catch(Exception ignored){}save();toast("¡"+chosen+" ha nacido y se unió a tu familia! 💗");showTab(0);}
+  void hatchEgg(){String chosen=state.optString("egg_pet","Perrito");try{JSONArray pets=state.optJSONArray("pets");if(pets==null)pets=new JSONArray();boolean exists=false;for(int i=0;i<pets.length();i++)if(chosen.equals(pets.optString(i)))exists=true;if(!exists)pets.put(chosen);state.put("pets",pets);state.put("pet",chosen);state.put("food",85);state.put("fun",90);state.put("clean",100);state.put("energy",100);state.put("pet_selected",true);state.put("egg_hatched",true);state.remove("egg_started");state.remove("egg_pet");}catch(Exception ignored){}save();toast("¡"+chosen+" ha nacido y se unió a tu familia! 💗");showTab(0);}
 
   void header(String subtitle){
     LinearLayout h=new LinearLayout(this);h.setGravity(Gravity.CENTER_VERTICAL);
@@ -154,7 +154,8 @@ public class MainActivity extends Activity {
     section("💗 ¿Cómo te sientes hoy?");
     Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
     TextView petCollectionNote=txt("Tu compañero actual seguirá contigo mientras incubas y adoptas otra mascota. 💗",13,false);root.addView(petCollectionNote);
-    if(state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true))incubatorCard();
+    boolean incubating=state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true);
+    if(incubating){incubatorCard();root.addView(txt("Tu mascota anterior y sus cuidados siguen guardados. Mientras nace la nueva, esta pantalla muestra solo el huevo. 💗",13,false));return;}
     Button adopt=btn("🥚 Adoptar otra mascota · Huevo de 3 horas");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
     section("💗 Cuidados diarios");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
