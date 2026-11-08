@@ -199,6 +199,31 @@ public class MainActivity extends Activity {
   void sharePet(){String message="¡Mira a mi "+pet()+" en MimoPets! 🔥 Llevo "+num("streak")+" días de racha y tengo "+num("coins")+" monedas. 🐾";
     Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,message+" https://github.com/juniorguardia83-cloud/mascota-racha");startActivity(Intent.createChooser(send,"Compartir mi mascota"));}
 
+
+  void moodDialog(){
+    String[] moods={"Feliz 😄","Triste 🥺","Cansado 😴","Enamorado 💗","Emocionado 🤩","Tranquilo 😌","Con energía ⚡"};
+    new AlertDialog.Builder(this).setTitle("¿Cómo te sientes hoy?").setItems(moods,(d,w)->{String value=moods[w];try{state.put("mood",value);}catch(Exception ignored){}save();toast("Estado actualizado: "+value);showTab(1);}).setNegativeButton("Cancelar",null).show();
+  }
+  void gamesPage(){
+    root.removeAllViews();header("¡Vamos a jugar y ganar monedas! 🎮");
+    LinearLayout intro=card(0xFFE1F4E9);intro.setOrientation(1);intro.setPadding(dp(14),dp(10),dp(14),dp(10));root.addView(intro);intro.addView(txt("Completa los retos para ganar monedas. ¡Tu mascota te anima!",14,true));
+    gameCard("🍓 Memoria de frutas","Encuentra las dos parejas iguales.",0xFFFFE4EC,()->playMemory());
+    gameCard("💧 Puzzle de agua","Llena el vaso tocando 8 veces.",0xFFDDF1FF,()->playWater());
+    gameCard("🍊 Juicy Merge","Combina frutas hasta llegar al nivel 5.",0xFFE3F6D9,()->playMerge());
+    Button back=btn("← Volver al inicio");root.addView(back);back.setOnClickListener(v->showTab(0));
+  }
+  void gameCard(String title,String sub,int color,Runnable action){LinearLayout c=card(color);c.setOrientation(1);c.setPadding(dp(14),dp(8),dp(14),dp(8));c.addView(txt(title,19,true));c.addView(txt(sub,13,false));Button play=btn("🎮 Jugar");c.addView(play);root.addView(c);play.setOnClickListener(v->action.run());}
+  void gameReward(int coins){try{state.put("coins",num("coins")+coins);state.put("gamesPlayed",num("gamesPlayed")+1);}catch(Exception ignored){}save();toast("¡Ganaste +"+coins+" monedas! 🪙");gamesPage();}
+  void playWater(){final int[] taps={0};LinearLayout box=new LinearLayout(this);box.setOrientation(1);TextView count=txt("💧 0 / 8",24,true);count.setGravity(Gravity.CENTER);box.addView(count);Button fill=btn("🥤 Llenar vaso");box.addView(fill);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Puzzle de agua").setMessage("Toca hasta llenar el vaso.").setView(box).setNegativeButton("Salir",null).create();fill.setOnClickListener(v->{taps[0]++;count.setText("💧 "+taps[0]+" / 8");if(taps[0]>=8){dialog.dismiss();gameReward(15);}});dialog.show();}
+  void playMerge(){final int[] level={1};LinearLayout box=new LinearLayout(this);box.setOrientation(1);TextView fruit=txt("🍊 Nivel 1",26,true);fruit.setGravity(Gravity.CENTER);box.addView(fruit);Button merge=btn("✨ Combinar fruta");box.addView(merge);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Juicy Merge").setMessage("Combina frutas cinco veces para ganar.").setView(box).setNegativeButton("Salir",null).create();merge.setOnClickListener(v->{level[0]++;fruit.setText(new String[]{"🍊","🍎","🍐","🍇","🍉","🍍"}[Math.min(5,level[0])]+" Nivel "+level[0]);if(level[0]>=5){dialog.dismiss();gameReward(20);}});dialog.show();}
+  void playMemory(){
+    final String[] fruits={"🍓","🍋","🍓","🍋"};java.util.Collections.shuffle(java.util.Arrays.asList(fruits));final int[] first={-1},matches={0};final boolean[] locked={false};
+    LinearLayout grid=new LinearLayout(this);grid.setOrientation(1);Button[] cells=new Button[4];
+    for(int row=0;row<2;row++){LinearLayout line=new LinearLayout(this);line.setOrientation(0);grid.addView(line);for(int col=0;col<2;col++){int ix=row*2+col;cells[ix]=btn("❔");line.addView(cells[ix],new LinearLayout.LayoutParams(0,dp(76),1));}}
+    AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Memoria de frutas").setMessage("Encuentra las dos parejas.").setView(grid).setNegativeButton("Salir",null).create();
+    for(int i=0;i<4;i++){final int ix=i;cells[i].setOnClickListener(v->{if(locked[0]||cells[ix].getText().toString().equals(fruits[ix]))return;cells[ix].setText(fruits[ix]);if(first[0]<0){first[0]=ix;}else{int prev=first[0];if(fruits[prev].equals(fruits[ix])){matches[0]++;first[0]=-1;if(matches[0]>=2){dialog.dismiss();gameReward(25);}}else{locked[0]=true;new android.os.Handler().postDelayed(()->{cells[prev].setText("❔");cells[ix].setText("❔");first[0]=-1;locked[0]=false;},650);}}});}
+    dialog.show();
+  }
   void care(String key){
     int value=Math.min(100,state.optInt(key,55)+25);
     try{state.put(key,value);int xp=state.optInt("xp",0)+8;int level=Math.max(1,state.optInt("level",1));if(xp>=100){xp-=100;level++;state.put("coins",num("coins")+25);toast("¡Subiste al nivel "+level+"! +25 monedas ⭐");}state.put("xp",xp);state.put("level",level);}catch(Exception e){}
