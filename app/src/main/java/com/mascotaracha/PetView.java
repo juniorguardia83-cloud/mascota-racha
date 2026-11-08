@@ -20,6 +20,8 @@ public class PetView extends View {
   private void fill(Canvas c,int color){p.setColor(color);p.setStyle(Paint.Style.FILL);p.setStrokeWidth(1);}
   private void circle(Canvas c,float x,float y,float r,int color){fill(c,color);c.drawCircle(x,y,r,p);}
   private void oval(Canvas c,float l,float t,float r,float b,int color){fill(c,color);c.drawOval(new RectF(l,t,r,b),p);}
+  private void gradientOval(Canvas c,float l,float t,float r,float b,int top,int bottom){p.setStyle(Paint.Style.FILL);p.setShader(new LinearGradient(l,t,l,b,top,bottom,Shader.TileMode.CLAMP));c.drawOval(new RectF(l,t,r,b),p);p.setShader(null);}
+  private void shine(Canvas c,float x,float y,float r){circle(c,x,y,r,0xDFFFFFFF);}
   private void round(Canvas c,float l,float t,float r,float b,float radius,int color){fill(c,color);c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);}
   private void line(Canvas c,float x1,float y1,float x2,float y2,int color,float width){p.setColor(color);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(width);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);}
   private void text(Canvas c,String value,float x,float y,float size,int color){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-rounded",Typeface.BOLD));p.setTextAlign(Paint.Align.CENTER);c.drawText(value,x,y,p);}
@@ -74,22 +76,22 @@ public class PetView extends View {
     else if(animal.equals("Gatito")){android.graphics.Path ears=new android.graphics.Path();ears.moveTo(-65,-42+bounce);ears.lineTo(-59,-119+bounce);ears.quadTo(-34,-105+bounce,-20,-57+bounce);ears.close();fill(canvas,fur);canvas.drawPath(ears,p);ears.reset();ears.moveTo(65,-42+bounce);ears.lineTo(59,-119+bounce);ears.quadTo(34,-105+bounce,20,-57+bounce);ears.close();canvas.drawPath(ears,p);oval(canvas,-53,-99+bounce,-35,-58+bounce,0xFFFFA8B8);oval(canvas,35,-99+bounce,53,-58+bounce,0xFFFFA8B8);}
     else{circle(canvas,-43,-76+bounce,29,fur);circle(canvas,43,-76+bounce,29,fur);if(animal.equals("Pandita")){circle(canvas,-43,-76+bounce,15,0xFF17171C);circle(canvas,43,-76+bounce,15,0xFF17171C);}}
     // arms, body, outfit and feet
-    oval(canvas,-65,5+bounce,65,101+bounce,fur);
+    gradientOval(canvas,-65,5+bounce,65,101+bounce,0xFFFFF5F1,fur);
     canvas.save();canvas.rotate((float)Math.sin(elapsed/170.0)*17,-57,44+bounce);oval(canvas,-78,25+bounce,-50,70+bounce,fur);canvas.restore();
     canvas.save();canvas.rotate((float)Math.sin(elapsed/170.0+1)*17,57,44+bounce);oval(canvas,50,25+bounce,78,70+bounce,fur);canvas.restore();
     if(sitting){oval(canvas,-55,66+bounce,-4,91+bounce,fur);oval(canvas,4,66+bounce,55,91+bounce,fur);oval(canvas,-54,82+bounce,-5,105+bounce,0xFFFFDCC7);oval(canvas,5,82+bounce,54,105+bounce,0xFFFFDCC7);}
     else{oval(canvas,-47,66+bounce,-16,109+bounce,fur);oval(canvas,16,66+bounce,47,109+bounce,fur);oval(canvas,-52,94+bounce,-10,111+bounce,0xFFFFDCC7);oval(canvas,10,94+bounce,52,111+bounce,0xFFFFDCC7);}
     // cute clothing
-    round(canvas,-55,15+bounce,55,78+bounce,22,outfit==8?0xFFFFC84A:outfit==11?0xFFB78CF4:outfit==3?0xFF8BC8F0:0xFFFFA8C7);
+    round(canvas,-55,15+bounce,55,78+bounce,24,outfit==8?0xFFFFC84A:outfit==11?0xFFB78CF4:outfit==3?0xFF8BC8F0:0xFFFFA8C7);round(canvas,-48,19+bounce,48,31+bounce,9,0x33FFFFFF);
     oval(canvas,-19,14+bounce,19,38+bounce,0xFFFFF4F1);
     if(outfit==0||outfit==10){circle(canvas,-17,22+bounce,11,0xFFFF78AA);circle(canvas,17,22+bounce,11,0xFFFF78AA);circle(canvas,0,22+bounce,8,0xFFFFD45C);}
     // head and muzzle
-    circle(canvas,0,-40+bounce,69,fur);
+    circle(canvas,0,-40+bounce,72,0x22452F28);gradientOval(canvas,-69,-112+bounce,69,31+bounce,0xFFFFF7F2,fur);oval(canvas,-42,-102+bounce,-12,-75+bounce,0x22FFFFFF);oval(canvas,22,-102+bounce,47,-77+bounce,0x22FFFFFF);
     if(animal.equals("Pandita")){oval(canvas,-56,-79+bounce,-9,-7+bounce,0xFF17171C);oval(canvas,9,-79+bounce,56,-7+bounce,0xFF17171C);oval(canvas,-48,-72+bounce,-15,-18+bounce,0xFFFFFFFF);oval(canvas,15,-72+bounce,48,-18+bounce,0xFFFFFFFF);}
     else if(animal.equals("Perrito")){oval(canvas,-65,-57+bounce,-43,-3+bounce,0xFFC4875F);oval(canvas,43,-57+bounce,65,-3+bounce,0xFFC4875F);}
-    boolean blink=(elapsed%4300)<150;circle(canvas,-25,-48+bounce,blink?1.4f:7,dark);circle(canvas,25,-48+bounce,blink?1.4f:7,dark);
-    circle(canvas,-43,-22+bounce,10,0x55FF7799);circle(canvas,43,-22+bounce,10,0x55FF7799);
-    oval(canvas,-16,-22+bounce,16,2+bounce,0xFFFFE6D9);circle(canvas,0,-14+bounce,5,dark);
+    boolean blink=(elapsed%4300)<150;circle(canvas,-25,-48+bounce,blink?1.4f:8,dark);circle(canvas,25,-48+bounce,blink?1.4f:8,dark);if(!blink){shine(canvas,-28,-52+bounce,2.7f);shine(canvas,22,-52+bounce,2.7f);circle(canvas,-20,-43+bounce,1.2f,0x88FFFFFF);circle(canvas,30,-43+bounce,1.2f,0x88FFFFFF);}
+    circle(canvas,-43,-22+bounce,11,0x66FF86A8);circle(canvas,43,-22+bounce,11,0x66FF86A8);circle(canvas,-46,-25+bounce,3,0x66FFFFFF);circle(canvas,40,-25+bounce,3,0x66FFFFFF);
+    oval(canvas,-18,-22+bounce,18,3+bounce,0xFFFFE6D9);circle(canvas,0,-14+bounce,5,0xFF79515A);shine(canvas,-2,-16+bounce,1.5f);
     p.setColor(dark);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);p.setStrokeCap(Paint.Cap.ROUND);canvas.drawArc(new RectF(-10,-12+bounce,0,-2+bounce),0,90,false,p);canvas.drawArc(new RectF(0,-12+bounce,10,-2+bounce),90,90,false,p);p.setStyle(Paint.Style.FILL);
     // accessories
     if(outfit==1){circle(canvas,0,-112+bounce,20,0xFFFFD34D);Path star=new Path();for(int i=0;i<10;i++){double a=-Math.PI/2+i*Math.PI/5;float r=i%2==0?20:9;float x=(float)Math.cos(a)*r,y=-112+bounce+(float)Math.sin(a)*r;if(i==0)star.moveTo(x,y);else star.lineTo(x,y);}star.close();fill(canvas,0xFFFFF2A5);canvas.drawPath(star,p);}
