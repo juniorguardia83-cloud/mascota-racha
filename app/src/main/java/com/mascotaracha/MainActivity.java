@@ -16,12 +16,12 @@ import java.util.*;
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
-  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar;
+  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar; ImageView profilePhoto;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
-  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();handleAuthIntent(getIntent());syncCloud();}
+  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();handleAuthIntent(getIntent());if(prefs.getString("token",null)!=null)showTab(0);else showTab(5);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
   JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
   }
   void showTab(int tab){
     root.removeAllViews();status=null;stats=null;missionText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
-    if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
+    if(tab==5)loginPage();else if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
     pageScroll.post(()->pageScroll.scrollTo(0,0));
   }
   void homePage(){
@@ -98,7 +98,32 @@ public class MainActivity extends Activity {
     for(int i=0;i<clothes.length;i++){final int ix=i;Button b=btn(clothes[i]+"   ·   "+prices[i]+" 🪙");root.addView(b);b.setOnClickListener(v->buy(ix));}
     section("🎒 Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);refresh();
   }
-  void profilePage(){
+
+  void loginPage(){
+    root.setGravity(Gravity.CENTER_HORIZONTAL);
+    TextView logo=txt("🐾",54,true);logo.setGravity(Gravity.CENTER);root.addView(logo,new LinearLayout.LayoutParams(-1,dp(76)));
+    TextView brand=txt("MimoPets",30,true);brand.setTextColor(0xFF397A48);brand.setGravity(Gravity.CENTER);root.addView(brand);
+    TextView intro=txt("Un pequeño mundo para compartir con tus mascotas 💚",15,false);intro.setGravity(Gravity.CENTER);root.addView(intro);
+    LinearLayout panel=card(0xFFFFFFFF);panel.setOrientation(1);panel.setPadding(dp(16),dp(16),dp(16),dp(16));LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,-2);pp.topMargin=dp(20);root.addView(panel,pp);
+    panel.addView(txt("¡Bienvenido a casa!",21,true));
+    panel.addView(txt("Inicia sesión para guardar tu mascota y tu progreso.",13,false));
+    emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType( android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);panel.addView(emailInput);
+    passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña");passwordInput.setInputType(129);panel.addView(passwordInput);
+    termsCheck=new CheckBox(this);termsCheck.setText("Acepto los términos y la política de privacidad");termsCheck.setTextColor(0xFF527653);panel.addView(termsCheck);
+    TextView terms=txt("Leer términos y condiciones",13,true);terms.setTextColor(0xFFB45D8B);panel.addView(terms);terms.setOnClickListener(v->showTerms());
+    Button google=btn("🌈  Continuar con Google");panel.addView(google,new LinearLayout.LayoutParams(-1,dp(50)));
+    Button login=btn("Iniciar sesión");panel.addView(login,new LinearLayout.LayoutParams(-1,dp(48)));
+    Button signup=btn("Crear cuenta con correo");panel.addView(signup,new LinearLayout.LayoutParams(-1,dp(48)));
+    TextView forgot=txt("¿Olvidaste tu contraseña? Recuperar acceso",13,true);forgot.setTextColor(0xFFB45D8B);panel.addView(forgot);
+    google.setOnClickListener(v->{if(!termsCheck.isChecked()){toast("Acepta los términos para continuar.");return;}googleLogin();});
+    login.setOnClickListener(v->{if(!termsCheck.isChecked()){toast("Acepta los términos para continuar.");return;}account("login");});
+    signup.setOnClickListener(v->{if(!termsCheck.isChecked()){toast("Acepta los términos para continuar.");return;}account("signup");});
+    forgot.setOnClickListener(v->recoverPassword());
+    status=txt("Tu cuenta protege tu partida y permite recuperarla en otros dispositivos.",12,false);root.addView(status);
+  }
+  void chooseProfilePhoto(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("image/*");startActivityForResult(i,712);}
+  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){super.onActivityResult(requestCode,resultCode,data);if(requestCode==712&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null){Uri u=data.getData();try{getContentResolver().takePersistableUriPermission(u,Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(Exception ignored){}prefs.edit().putString("profile_photo",u.toString()).apply();if(profilePhoto!=null)profilePhoto.setImageURI(u);}}
+\n  void profilePage(){
     header("Tu espacio seguro y tus recuerdos ☁️");
     LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(16),dp(12),dp(16),dp(12));root.addView(account);
     account.addView(txt("💗 ¡Qué bueno verte!",20,true));
@@ -109,7 +134,7 @@ public class MainActivity extends Activity {
     TextView termsLink=txt("Leer términos y condiciones",13,true);termsLink.setTextColor(0xFFB45D8B);account.addView(termsLink);termsLink.setOnClickListener(v->showTerms());
     Button signup=btn("Crear mi cuenta");account.addView(signup,new LinearLayout.LayoutParams(-1,dp(48)));
     Button login=btn("Iniciar sesión");account.addView(login,new LinearLayout.LayoutParams(-1,dp(48)));
-    Button google=btn("🌈 Continuar con Google");account.addView(google,new LinearLayout.LayoutParams(-1,dp(48)));
+    Button google=btn("🌈 Vincular con Google");account.addView(google,new LinearLayout.LayoutParams(-1,dp(48)));
     TextView forgot=txt("¿Olvidaste tu contraseña? Recuperar acceso",13,true);forgot.setTextColor(0xFFB45D8B);account.addView(forgot);
     signup.setOnClickListener(v->{if(termsCheck.isChecked())account("signup");else toast("Acepta los términos para crear tu cuenta.");});
     login.setOnClickListener(v->account("login"));google.setOnClickListener(v->googleLogin());forgot.setOnClickListener(v->recoverPassword());
@@ -195,7 +220,7 @@ public class MainActivity extends Activity {
   void handleAuthIntent(Intent intent){
     if(intent==null||intent.getData()==null)return;String fragment=intent.getData().getFragment();if(fragment==null)return;
     String token=null;String type="";for(String part:fragment.split("&")){String[] kv=part.split("=",2);if(kv.length==2){if(kv[0].equals("access_token"))token=Uri.decode(kv[1]);if(kv[0].equals("type"))type=Uri.decode(kv[1]);}}
-    if(token==null)return;final String access=token;
+    if(token==null){String code=intent.getData().getQueryParameter("code");if(code!=null){toast("Google devolvió un código de acceso. Configura el flujo PKCE en Supabase para completar la sesión.");}return;}final String access=token;
     if("recovery".equals(type)){prefs.edit().putString("recovery_token",access).apply();runOnUiThread(()->newPasswordDialog(access));return;}
     new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{showTab(4);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta de Google."));}}).start();
   }
