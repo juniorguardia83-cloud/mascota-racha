@@ -16,12 +16,12 @@ import java.util.*;
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
-  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar;
+  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar; ImageView profilePhoto;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
-  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();handleAuthIntent(getIntent());syncCloud();}
+  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();handleAuthIntent(getIntent());if(prefs.getBoolean("signed_in",false))syncCloud();}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
   JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
@@ -29,6 +29,7 @@ public class MainActivity extends Activity {
   void save(){prefs.edit().putString("state",state.toString()).apply();refreshWidget();syncCloud();}
   void refreshWidget(){Intent i=new Intent(this,PetWidgetProvider.class);i.setAction(android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE);int[] ids=android.appwidget.AppWidgetManager.getInstance(this).getAppWidgetIds(new android.content.ComponentName(this,PetWidgetProvider.class));i.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);sendBroadcast(i);}
   void buildUI(){
+    if(!prefs.getBoolean("signed_in",false)){loginPage();return;}
     LinearLayout shell=new LinearLayout(this);shell.setOrientation(1);shell.setBackgroundColor(0xFFF5FAF2);
     pageScroll=new ScrollView(this);pageScroll.setFillViewport(true);
     root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(12),dp(16),dp(24));root.setBackgroundColor(0xFFF5FAF2);
@@ -37,6 +38,26 @@ public class MainActivity extends Activity {
     String[] labels={"⌂\\nInicio","🐾\\nMascota","🏡\\nCasa","🛍️\\nTienda","👤\\nPerfil"};
     for(int i=0;i<labels.length;i++){final int tab=i;Button b=btn(labels[i]);b.setTextSize(10);nav.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));b.setOnClickListener(v->showTab(tab));}
     shell.addView(nav,new LinearLayout.LayoutParams(-1,dp(70)));setContentView(shell);showTab(0);
+  }
+  void loginPage(){
+    LinearLayout page=new LinearLayout(this);page.setOrientation(1);page.setPadding(dp(22),dp(30),dp(22),dp(24));page.setGravity(Gravity.CENTER_HORIZONTAL);page.setBackgroundColor(0xFFF1F9EC);
+    ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.addView(page);setContentView(scroll);
+    TextView logo=txt("🐾",58,true);logo.setGravity(Gravity.CENTER);page.addView(logo);
+    TextView brand=txt("MimoPets",34,true);brand.setTextColor(0xFF326B3D);brand.setGravity(Gravity.CENTER);page.addView(brand);
+    TextView tagline=txt("Un pequeño hogar para compartir y cuidar 💚",15,false);tagline.setGravity(Gravity.CENTER);tagline.setTextColor(0xFF718B73);page.addView(tagline);
+    LinearLayout panel=card(0xFFFFFFFF);panel.setOrientation(1);panel.setPadding(dp(18),dp(18),dp(18),dp(18));LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,-2);pp.topMargin=dp(26);page.addView(panel,pp);
+    panel.addView(txt("¡Bienvenido a tu mundo!",22,true));
+    panel.addView(txt("Inicia sesión para guardar tus mascotas, recuerdos y progreso.",14,false));
+    Button google=btn("🌈  Continuar con Google");google.setTextSize(16);panel.addView(google,new LinearLayout.LayoutParams(-1,dp(54)));google.setOnClickListener(v->googleLogin());
+    TextView divider=txt("o entra con tu correo",12,false);divider.setGravity(Gravity.CENTER);panel.addView(divider);
+    emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType( android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);panel.addView(emailInput);
+    passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña");passwordInput.setInputType( android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);panel.addView(passwordInput);
+    termsCheck=new CheckBox(this);termsCheck.setText("Acepto los términos y condiciones");termsCheck.setTextColor(0xFF527653);panel.addView(termsCheck);
+    TextView terms=txt("Leer términos y política de privacidad",13,true);terms.setTextColor(0xFFB45D8B);panel.addView(terms);terms.setOnClickListener(v->showTerms());
+    Button login=btn("Iniciar sesión con correo");panel.addView(login,new LinearLayout.LayoutParams(-1,dp(48)));login.setOnClickListener(v->{if(termsCheck.isChecked())account("login");else toast("Lee y acepta los términos para continuar.");});
+    Button signup=btn("Crear cuenta nueva");panel.addView(signup,new LinearLayout.LayoutParams(-1,dp(48)));signup.setOnClickListener(v->{if(termsCheck.isChecked())account("signup");else toast("Acepta los términos para crear tu cuenta.");});
+    TextView forgot=txt("¿Olvidaste tu contraseña? Recuperar acceso",13,true);forgot.setTextColor(0xFFB45D8B);panel.addView(forgot);forgot.setOnClickListener(v->recoverPassword());
+    status=txt("Tu cuenta protege y sincroniza tu aventura.",12,false);status.setGravity(Gravity.CENTER);page.addView(status);
   }
   void header(String subtitle){
     LinearLayout h=new LinearLayout(this);h.setGravity(Gravity.CENTER_VERTICAL);
@@ -82,14 +103,21 @@ public class MainActivity extends Activity {
     ProgressBar xpbar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);xpbar.setMax(100);xpbar.setProgress(xp%100);root.addView(xpbar,new LinearLayout.LayoutParams(-1,dp(12)));
   }
   void housePage(){
-    header("Un hogar bonito para tu mascota 🏡");
-    section("Elige una habitación");
-    String[] rooms={"🌷 Jardín","🛏️ Dormitorio","🛋️ Sala","🫧 Baño"};
-    for(int i=0;i<rooms.length;i++){final int ix=i;Button b=btn(rooms[i]+(state.optInt("room",0)==i?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("room",ix);showTab(2);});}
-    section("Así se ve tu habitación");
-    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(300)));
-    root.addView(txt("Cada habitación tiene su propio ambiente y decoración. Cambia de espacio cuando quieras.",13,false));
-    section("🎀 Personaliza a tu compañero");Button wardrobe=btn("Abrir mi armario");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
+    header("Nuestro hogar 🏡");
+    LinearLayout banner=card(0xFFFFE8B7);banner.setOrientation(1);banner.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(banner);
+    banner.addView(txt("🏠  La casita de "+pet(),19,true));banner.addView(txt("Elige dónde quieres pasar el rato",13,false));
+    LinearLayout rooms=new LinearLayout(this);rooms.setGravity(Gravity.CENTER);rooms.setPadding(0,dp(8),0,dp(8));root.addView(rooms);
+    String[] labels={"🌿 Salón","🍳 Cocina","🛁 Baño","🛏️ Dormitorio","🌷 Jardín"};int[] roomIds={2,4,3,1,0};
+    for(int i=0;i<labels.length;i++){final int ix=roomIds[i];Button b=btn(labels[i]);b.setTextSize(10);rooms.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));b.setOnClickListener(v->{put("room",ix);showTab(2);});}
+    section("✨ Tu habitación");
+    LinearLayout scene=card(0xFFFFDFAE);scene.setOrientation(1);scene.setPadding(dp(5),dp(5),dp(5),dp(5));root.addView(scene);
+    TextView roomName=txt(new String[]{"Jardín 🌷","Dormitorio 🛏️","Sala 🛋️","Baño 🫧","Cocina 🍳"}[Math.min(4,state.optInt("room",0))],17,true);roomName.setGravity(Gravity.CENTER);scene.addView(roomName);
+    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));scene.addView(petView,new LinearLayout.LayoutParams(-1,dp(330)));
+    section("Acciones de la casa");
+    String[] actions={"🍎 Preparar comida","🧸 Jugar en el salón","🫧 Bañar a "+pet(),"🌙 Llevar a dormir"};
+    String[] keys={"food","fun","clean","energy"};
+    for(int i=0;i<actions.length;i++){final String k=keys[i];Button b=btn(actions[i]);root.addView(b);b.setOnClickListener(v->{care(k);});}
+    Button wardrobe=btn("👗 Abrir armario y ropa");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
   }
   void shopPage(){
     header("Compra cositas con tus monedas 🛍️");
@@ -101,6 +129,10 @@ public class MainActivity extends Activity {
   void profilePage(){
     header("Tu espacio seguro y tus recuerdos ☁️");
     LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(16),dp(12),dp(16),dp(12));root.addView(account);
+    LinearLayout photoRow=new LinearLayout(this);photoRow.setGravity(Gravity.CENTER_VERTICAL);photoRow.setOrientation(0);
+    profilePhoto=new ImageView(this);LinearLayout.LayoutParams photoParams=new LinearLayout.LayoutParams(dp(88),dp(88));photoParams.rightMargin=dp(14);profilePhoto.setBackground(round(0xFFE4F2DD,dp(44)));profilePhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);photoRow.addView(profilePhoto,photoParams);
+    String savedPhoto=prefs.getString("profile_photo",null);if(savedPhoto!=null){try{profilePhoto.setImageURI(Uri.parse(savedPhoto));}catch(Exception ignored){}}
+    Button choosePhoto=btn("📷 Elegir foto");photoRow.addView(choosePhoto);choosePhoto.setOnClickListener(v->{Intent pick=new Intent(Intent.ACTION_GET_CONTENT);pick.setType("image/*");startActivityForResult(Intent.createChooser(pick,"Elige tu foto"),410);});account.addView(photoRow);
     account.addView(txt("💗 ¡Qué bueno verte!",20,true));
     account.addView(txt("Entra para guardar tu mascota y continuar tu aventura en otros dispositivos.",13,false));
     emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);account.addView(emailInput);
@@ -178,7 +210,7 @@ public class MainActivity extends Activity {
   }
   String authError(String response){try{JSONObject e=new JSONObject(response);return e.optString("msg",e.optString("message",e.optString("error_description",response)));}catch(Exception ex){return response;}}
   void saveSignedInUser(String access,JSONObject user)throws Exception{
-    String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).apply();
+    String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).putBoolean("signed_in",true).apply();
     HttpURLConnection get=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?id=eq."+uid+"&select=data").openConnection();get.setRequestProperty("apikey",KEY);get.setRequestProperty("Authorization","Bearer "+access);get.setConnectTimeout(15000);get.setReadTimeout(15000);
     if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null){state=cloud;prefs.edit().putString("state",state.toString()).apply();}}}
     refreshWidget();syncCloud();
@@ -188,17 +220,32 @@ public class MainActivity extends Activity {
     new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/recover?redirect_to=mimopets://auth-callback").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("email",email).toString().getBytes("UTF-8"));int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->{if(status!=null)status.setText("Si el correo existe, recibirás un enlace para restablecer la contraseña.");toast("Revisa tu correo 💌");});}catch(Exception e){runOnUiThread(()->toast("No se pudo enviar el enlace: "+e.getMessage()));}}).start();
   }
   void googleLogin(){
-    try{String redirect=URLEncoder.encode("mimopets://auth-callback","UTF-8");String url=URL+"/auth/v1/authorize?provider=google&redirect_to="+redirect;startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));if(status!=null)status.setText("Abriendo Google…");}
-    catch(Exception e){toast("No se pudo abrir el acceso con Google.");}
+    try{
+      String redirect=URLEncoder.encode("mimopets://auth-callback","UTF-8");
+      String url=URL+"/auth/v1/authorize?provider=google&redirect_to="+redirect;
+      Intent browser=new Intent(Intent.ACTION_VIEW,Uri.parse(url));startActivity(browser);
+      if(status!=null)status.setText("Abriendo Google… Al elegir tu cuenta volverás aquí.");
+    }catch(Exception e){toast("No se pudo abrir Google: "+e.getMessage());}
+  }
+  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+    super.onActivityResult(requestCode,resultCode,data);
+    if(requestCode==410&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null){
+      Uri photo=data.getData();try{getContentResolver().takePersistableUriPermission(photo,Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(Exception ignored){}
+      prefs.edit().putString("profile_photo",photo.toString()).apply();if(profilePhoto!=null)profilePhoto.setImageURI(photo);toast("¡Foto de perfil actualizada! 📸");
+    }
   }
   @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleAuthIntent(intent);}
   void handleAuthIntent(Intent intent){
-    if(intent==null||intent.getData()==null)return;String fragment=intent.getData().getFragment();if(fragment==null)return;
-    String token=null;String type="";for(String part:fragment.split("&")){String[] kv=part.split("=",2);if(kv.length==2){if(kv[0].equals("access_token"))token=Uri.decode(kv[1]);if(kv[0].equals("type"))type=Uri.decode(kv[1]);}}
-    if(token==null)return;final String access=token;
+    if(intent==null||intent.getData()==null)return;
+    Uri data=intent.getData();String fragment=data.getFragment();String token=null;String type="";
+    if(fragment!=null)for(String part:fragment.split("&")){String[] kv=part.split("=",2);if(kv.length==2){if(kv[0].equals("access_token"))token=Uri.decode(kv[1]);if(kv[0].equals("type"))type=Uri.decode(kv[1]);}}
+    if(token==null)token=data.getQueryParameter("access_token");
+    if(token==null){String error=data.getQueryParameter("error_description");if(error!=null)runOnUiThread(()->toast("Google no pudo completar el acceso: "+error));return;}
+    final String access=token;
     if("recovery".equals(type)){prefs.edit().putString("recovery_token",access).apply();runOnUiThread(()->newPasswordDialog(access));return;}
-    new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{showTab(4);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta de Google."));}}).start();
+    new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);int code=c.getResponseCode();if(code<200||code>=300)throw new Exception(readResponse(c));JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{buildUI();showTab(4);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta: "+e.getMessage()));}}).start();
   }
+  @Override public void onBackPressed(){if(!prefs.getBoolean("signed_in",false)){super.onBackPressed();return;}showTab(0);}
   void newPasswordDialog(String access){
     EditText input=new EditText(this);input.setHint("Nueva contraseña (mínimo 6 caracteres)");input.setInputType(129);
     new AlertDialog.Builder(this).setTitle("Crear nueva contraseña").setView(input).setPositiveButton("Guardar",(d,w)->{String pass=input.getText().toString();if(pass.length()<6){toast("Usa al menos 6 caracteres.");return;}new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestMethod("PUT");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("password",pass).toString().getBytes("UTF-8"));int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->toast("Contraseña actualizada. Ya puedes iniciar sesión."));}catch(Exception e){runOnUiThread(()->toast("No se pudo cambiar: "+e.getMessage()));}}).start();}).setNegativeButton("Cancelar",null).show();
