@@ -142,8 +142,11 @@ public class MainActivity extends Activity {
     LinearLayout photoRow=new LinearLayout(this);photoRow.setGravity(Gravity.CENTER_VERTICAL);photoRow.setOrientation(0);
     profilePhoto=new ImageView(this);LinearLayout.LayoutParams photoParams=new LinearLayout.LayoutParams(dp(88),dp(88));photoParams.rightMargin=dp(14);profilePhoto.setBackground(round(0xFFE4F2DD,dp(44)));profilePhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);photoRow.addView(profilePhoto,photoParams);
     String savedPhoto=prefs.getString("profile_photo",null);if(savedPhoto!=null){try{profilePhoto.setImageURI(Uri.parse(savedPhoto));}catch(Exception ignored){}}
-    Button choosePhoto=btn("📷 Elegir foto");photoRow.addView(choosePhoto);choosePhoto.setOnClickListener(v->{Intent pick=new Intent(Intent.ACTION_GET_CONTENT);pick.setType("image/*");startActivityForResult(Intent.createChooser(pick,"Elige tu foto"),410);});account.addView(photoRow);
-    account.addView(txt("💗 ¡Qué bueno verte!",20,true));
+    Button choosePhoto=btn("📷 Elegir foto");photoRow.addView(choosePhoto);choosePhoto.setOnClickListener(v->{Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT);pick.addCategory(Intent.CATEGORY_OPENABLE);pick.setType("image/*");startActivityForResult(pick,410);});account.addView(photoRow);
+    account.addView(txt("💗 Tu perfil",20,true));
+    EditText displayName=new EditText(this);displayName.setSingleLine(true);displayName.setHint("Tu nombre");displayName.setText(prefs.getString("profile_name",""));account.addView(displayName);
+    Button saveProfile=btn("Guardar perfil");account.addView(saveProfile);saveProfile.setOnClickListener(v->{prefs.edit().putString("profile_name",displayName.getText().toString().trim()).apply();toast("Perfil guardado 💚");});
+    account.addView(txt("Cuenta: "+prefs.getString("user_email","Sesión iniciada"),12,false));
     account.addView(txt("Entra para guardar tu mascota y continuar tu aventura en otros dispositivos.",13,false));
     emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);account.addView(emailInput);
     passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña (mínimo 6 caracteres)");passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);account.addView(passwordInput);
@@ -220,7 +223,7 @@ public class MainActivity extends Activity {
   }
   String authError(String response){try{JSONObject e=new JSONObject(response);return e.optString("msg",e.optString("message",e.optString("error_description",response)));}catch(Exception ex){return response;}}
   void saveSignedInUser(String access,JSONObject user)throws Exception{
-    String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).putBoolean("signed_in",true).apply();
+    String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).putString("user_email",user.optString("email","")).putBoolean("signed_in",true).apply();
     HttpURLConnection get=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?id=eq."+uid+"&select=data").openConnection();get.setRequestProperty("apikey",KEY);get.setRequestProperty("Authorization","Bearer "+access);get.setConnectTimeout(15000);get.setReadTimeout(15000);
     if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null){state=cloud;prefs.edit().putString("state",state.toString()).apply();}}}
     refreshWidget();syncCloud();
