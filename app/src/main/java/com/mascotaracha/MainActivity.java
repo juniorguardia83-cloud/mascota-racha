@@ -231,10 +231,38 @@ public class MainActivity extends Activity {
       HttpURLConnection c=(HttpURLConnection)new URL(URL+endpoint).openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(20000);c.setReadTimeout(20000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
       int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));
       JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");
-      if(access.length()==0||user==null){runOnUiThread(()->{if(status!=null)status.setText("Cuenta creada. Revisa tu correo, confirma la dirección y después inicia sesión.");toast("Te enviamos la confirmación por correo 💌");});return;}
+      if(mode.equals("signup")&&(access.length()==0||user==null)){
+        runOnUiThread(()->{if(status!=null)status.setText("Te enviamos un código de 6 dígitos. Revisa tu correo 💌");showOtpDialog(email);});
+        return;
+      }
+      if(access.length()==0||user==null)throw new Exception("No se recibió una sesión válida. Comprueba tus datos.");
       saveSignedInUser(access,user);
       runOnUiThread(()->{buildUI();showTab(4);if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
     }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo completar: "+msg);});}}).start();
+  }
+  void showOtpDialog(String email){
+    LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setPadding(dp(18),dp(8),dp(18),dp(4));
+    TextView info=txt("Escribe el código de 6 dígitos que enviamos a:",14,false);box.addView(info);
+    TextView address=txt(email,14,true);address.setTextColor(0xFF47794B);box.addView(address);
+    EditText code=new EditText(this);code.setSingleLine(true);code.setHint("000000");code.setTextSize(24);code.setGravity(Gravity.CENTER);code.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);code.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(6)});box.addView(code);
+    TextView resend=txt("¿No llegó? Reenviar código",13,true);resend.setTextColor(0xFFB45D8B);box.addView(resend);
+    AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Confirma tu correo 💌").setView(box).setPositiveButton("Verificar",null).setNegativeButton("Después",null).create();
+    resend.setOnClickListener(v->resendSignupCode(email));
+    dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String otp=code.getText().toString().trim();if(!otp.matches("[0-9]{6}")){code.setError("Escribe los 6 números");return;}verifySignupCode(email,otp,dialog);}));
+    dialog.show();
+  }
+  void resendSignupCode(String email){
+    new Thread(()->{try{JSONObject body=new JSONObject();body.put("type","signup");body.put("email",email);
+      HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/resend").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(20000);c.setReadTimeout(20000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
+      int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->toast("Te enviamos otro código 💌"));
+    }catch(Exception e){runOnUiThread(()->toast("No se pudo reenviar: "+e.getMessage()));}}).start();
+  }
+  void verifySignupCode(String email,String otp,AlertDialog dialog){
+    new Thread(()->{try{JSONObject body=new JSONObject();body.put("type","signup");body.put("email",email);body.put("token",otp);
+      HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/verify").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(20000);c.setReadTimeout(20000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
+      int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");if(access.isEmpty()||user==null)throw new Exception("El código no generó una sesión. Intenta iniciar sesión.");
+      saveSignedInUser(access,user);runOnUiThread(()->{dialog.dismiss();buildUI();showTab(4);toast("¡Correo confirmado! Bienvenido a MimoPets 💚");});
+    }catch(Exception e){runOnUiThread(()->toast("Código no válido o vencido: "+e.getMessage()));}}).start();
   }
   String authError(String response){try{JSONObject e=new JSONObject(response);return e.optString("msg",e.optString("message",e.optString("error_description",response)));}catch(Exception ex){return response;}}
   void saveSignedInUser(String access,JSONObject user)throws Exception{
