@@ -200,11 +200,12 @@ public class MainActivity extends Activity {
   void sharedInviteDialog(){
     String code=prefs.getString("shared_invite_code",null);
     if(code==null){code="MIMO-"+Integer.toHexString(prefs.getString("uid",prefs.getString("user_email","guest")).hashCode()).toUpperCase(Locale.US);prefs.edit().putString("shared_invite_code",code).apply();}
+    final String inviteCode=code;
     LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setPadding(dp(12),dp(8),dp(12),dp(8));
     box.addView(txt("Invita a alguien que viva en otra dirección para cuidar juntos. 💗",15,true));
-    TextView codeView=txt(code,28,true);codeView.setGravity(Gravity.CENTER);codeView.setTextColor(0xFF8B5C9E);box.addView(codeView);
+    TextView codeView=txt(inviteCode,28,true);codeView.setGravity(Gravity.CENTER);codeView.setTextColor(0xFF8B5C9E);box.addView(codeView);
     box.addView(txt("Este código se puede compartir. La vinculación real entre cuentas y el widget compartido requiere guardar y validar invitaciones en Supabase.",12,false));
-    new AlertDialog.Builder(this).setTitle("Widget compartido 💌").setView(box).setPositiveButton("Compartir código",(d,w)->{Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,"¡Cuidemos mascotas juntos en MimoPets! Mi código: "+code);startActivity(Intent.createChooser(send,"Compartir invitación"));}).setNeutralButton("Ingresar código",(d,w)->enterInviteCode()).setNegativeButton("Cerrar",null).show();
+    new AlertDialog.Builder(this).setTitle("Widget compartido 💌").setView(box).setPositiveButton("Compartir código",(d,w)->{Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,"¡Cuidemos mascotas juntos en MimoPets! Mi código: "+inviteCode);startActivity(Intent.createChooser(send,"Compartir invitación"));}).setNeutralButton("Ingresar código",(d,w)->enterInviteCode()).setNegativeButton("Cerrar",null).show();
   }
   void enterInviteCode(){EditText input=new EditText(this);input.setSingleLine(true);input.setHint("Código de invitación");new AlertDialog.Builder(this).setTitle("Unirse a un hogar").setView(input).setPositiveButton("Guardar",(d,w)->{String code=input.getText().toString().trim().toUpperCase(Locale.US);if(code.length()<6){toast("Escribe un código válido");return;}prefs.edit().putString("pending_invite_code",code).apply();toast("Código guardado. Falta validar la invitación con Supabase.");}).setNegativeButton("Cancelar",null).show();}
   void roomFurnitureAction(float x,float y){
