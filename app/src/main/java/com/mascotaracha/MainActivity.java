@@ -23,10 +23,10 @@ public class MainActivity extends Activity {
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
   public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();if(state.optString("pet","").length()>0&&!state.optBoolean("pet_selected",false)){try{state.put("pet_selected",true);state.put("egg_hatched",true);prefs.edit().putString("state",state.toString()).apply();}catch(Exception ignored){}}missionIndex=Math.abs(day().hashCode())%missions.length;splashPage();new Handler().postDelayed(()->{buildUI();if(prefs.getBoolean("signed_in",false))syncCloud();},1500);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
-  JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
+  JSONObject load(){try{JSONObject saved=new JSONObject(prefs.getString("state","{}"));if(saved.has("pet")&&!saved.optString("pet","").isEmpty()){saved.put("pet_selected",true);saved.put("egg_hatched",true);saved.remove("egg_started");saved.remove("egg_pet");}return saved;}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
   void put(String k,Object v){try{state.put(k,v);}catch(Exception e){}save();}
-  void save(){prefs.edit().putString("state",state.toString()).apply();refreshWidget();syncCloud();}
+  void save(){prefs.edit().putString("state",state.toString()).putLong("state_saved_at",System.currentTimeMillis()).apply();refreshWidget();if(prefs.getBoolean("signed_in",false))syncCloud();}
   void refreshWidget(){Intent i=new Intent(this,PetWidgetProvider.class);i.setAction(android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE);int[] ids=android.appwidget.AppWidgetManager.getInstance(this).getAppWidgetIds(new android.content.ComponentName(this,PetWidgetProvider.class));i.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);sendBroadcast(i);}
   void buildUI(){
     if(!prefs.getBoolean("signed_in",false)){loginPage();return;}
@@ -149,11 +149,11 @@ public class MainActivity extends Activity {
     header("Conoce y cuida a tus compañeros 🐾");
     section("Elige a tu mascota");
     String[] names={"🐶 Perrito","🐱 Gatito","🐰 Conejito","🐼 Pandita"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
-    for(int i=0;i<names.length;i++){final String k=keys[i];Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("pet",k);showTab(1);});}
+    JSONArray pets=state.optJSONArray("pets");if(pets==null){pets=new JSONArray();pets.put(pet());try{state.put("pets",pets);}catch(Exception ignored){}save();}
+    for(int i=0;i<names.length;i++){final String k=keys[i];boolean owned=false;for(int j=0;j<pets.length();j++)if(k.equals(pets.optString(j)))owned=true;Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));b.setEnabled(owned);root.addView(b);b.setOnClickListener(v->{if(owned){put("pet",k);showTab(1);}else toast("Esta mascota aún no está desbloqueada 🥚");});}
     section("💗 ¿Cómo te sientes hoy?");
     Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
-    if(state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true))incubatorCard();
-    Button adopt=btn("🥚 Adoptar otra mascota · Huevo de 3 horas");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
+    TextView petCollectionNote=txt("Tu compañero está contigo 💗. No se iniciará otro huevo mientras esta mascota esté activa, así no se pierde el progreso.",13,false);root.addView(petCollectionNote);
     section("💗 Cuidados diarios");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
     String[] labels={"🍎 Dar comida","🎾 Jugar","🛁 Bañar","🌙 Descansar"};String[] keys2={"food","fun","clean","energy"};
@@ -348,9 +348,9 @@ public class MainActivity extends Activity {
   void saveSignedInUser(String access,JSONObject user)throws Exception{
     String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).putString("user_email",user.optString("email","")).putBoolean("signed_in",true).apply();
     HttpURLConnection get=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?id=eq."+uid+"&select=data").openConnection();get.setRequestProperty("apikey",KEY);get.setRequestProperty("Authorization","Bearer "+access);get.setConnectTimeout(15000);get.setReadTimeout(15000);
-    if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null){state=cloud;}}}
-    if(state.optString("pet","").length()>0&&!state.optBoolean("pet_selected",false)){state.put("pet_selected",true);}
-    prefs.edit().putString("state",state.toString()).apply();refreshWidget();syncCloud();
+    if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null&&cloud.length()>0){JSONObject merged=new JSONObject(cloud.toString());java.util.Iterator<String> it=state.keys();while(it.hasNext()){String key=it.next();merged.put(key,state.get(key));}state=merged;}}}
+    if(state.optString("pet","").length()>0){state.put("pet_selected",true);state.put("egg_hatched",true);state.remove("egg_started");state.remove("egg_pet");}
+    prefs.edit().putString("state",state.toString()).putLong("state_saved_at",System.currentTimeMillis()).apply();refreshWidget();syncCloud();
   }
   void recoverPassword(){
     String email=emailInput.getText().toString().trim();if(!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()){toast("Escribe primero tu correo electrónico.");return;}
@@ -381,8 +381,8 @@ public class MainActivity extends Activity {
     new AlertDialog.Builder(this).setTitle("Crear nueva contraseña").setView(input).setPositiveButton("Guardar",(d,w)->{String pass=input.getText().toString();if(pass.length()<6){toast("Usa al menos 6 caracteres.");return;}new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestMethod("PUT");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("password",pass).toString().getBytes("UTF-8"));int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->toast("Contraseña actualizada. Ya puedes iniciar sesión."));}catch(Exception e){runOnUiThread(()->toast("No se pudo cambiar: "+e.getMessage()));}}).start();}).setNegativeButton("Cancelar",null).show();
   }
   String readResponse(HttpURLConnection c)throws Exception{InputStream in=c.getResponseCode()<400?c.getInputStream():c.getErrorStream();if(in==null)return "";ByteArrayOutputStream b=new ByteArrayOutputStream();byte[] buf=new byte[2048];int n;while((n=in.read(buf))>0)b.write(buf,0,n);return b.toString("UTF-8");}
-  void syncCloud(){new Thread(()->{try{
-    String token=prefs.getString("token",null);if(token==null){JSONObject a=new JSONObject();a.put("data",new JSONObject());HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/signup").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(a.toString().getBytes("UTF-8"));JSONObject res=new JSONObject(read(c));token=res.optString("access_token",null);if(token==null)throw new Exception("Anonymous auth unavailable");prefs.edit().putString("token",token).putString("uid",res.getJSONObject("user").getString("id")).apply();}
+  void syncCloud(){if(!prefs.getBoolean("signed_in",false))return;new Thread(()->{try{
+    String token=prefs.getString("token",null);if(token==null)throw new Exception("No hay sesión activa");
     String uid=prefs.getString("uid","");JSONObject row=new JSONObject();row.put("id",uid);row.put("data",state);row.put("updated_at",new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US).format(new Date()));
     HttpURLConnection c=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?on_conflict=id").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+token);c.setRequestProperty("Content-Type","application/json");c.setRequestProperty("Prefer","resolution=merge-duplicates");c.getOutputStream().write(new JSONArray().put(row).toString().getBytes("UTF-8"));int code=c.getResponseCode();if(code<200||code>=300)throw new Exception("Supabase HTTP "+code);runOnUiThread(()->{if(status!=null)status.setText("☁️ Avances sincronizados con Supabase");});
   }catch(Exception e){runOnUiThread(()->{if(status!=null)status.setText("📱 Guardado en este teléfono · nube pendiente");});}}).start();}
