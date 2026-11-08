@@ -17,8 +17,14 @@ public class PetWidgetProvider extends AppWidgetProvider {
     try{org.json.JSONObject s=new org.json.JSONObject(prefs.getString("state","{}"));String name=s.optString("pet","Perrito");String emoji=name.equals("Gatito")?"🐱":name.equals("Conejito")?"🐰":name.equals("Pandita")?"🐼":"🐶";pet=emoji+" "+name;coins=s.optInt("coins",0);streak=s.optInt("streak",0);}catch(Exception ignored){}
     for(int id:ids){
       RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.pet_widget);
-      views.setTextViewText(R.id.widget_pet,pet);
-      views.setTextViewText(R.id.widget_stats,"🔥 "+streak+" días  ·  🪙 "+coins);
+      views.setTextViewText(R.id.widget_pet,name);
+      String face=name.equals("Gatito")?"🐱":name.equals("Conejito")?"🐰":name.equals("Pandita")?"🐼":"🐶";
+      views.setTextViewText(R.id.widget_face,face);
+      org.json.JSONObject s=new org.json.JSONObject(prefs.getString("state","{}"));
+      int energy=s.optInt("energy",75),fun=s.optInt("fun",75);
+      String message=energy<30?"Está muy somnoliento… quiere ir a la cama. 🌙":fun<30?"Está aburrido… ¿jugamos un ratito? 🎾":"¡Hola! Está feliz de verte. 💗";
+      views.setTextViewText(R.id.widget_message,message);
+      views.setTextViewText(R.id.widget_stats,"🔥 "+streak+" días  ·  🪙 "+coins+" monedas");
       Intent launch=new Intent(context,MainActivity.class);
       PendingIntent pi=PendingIntent.getActivity(context,0,launch,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
       views.setOnClickPendingIntent(R.id.widget_root,pi);
