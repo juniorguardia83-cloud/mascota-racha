@@ -24,12 +24,36 @@ public class PetView extends View {
   private void oval(Canvas c,float l,float t,float r,float b,int color){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawOval(new RectF(l,t,r,b),p);}
   @Override protected void onDraw(Canvas canvas){
     super.onDraw(canvas);float w=getWidth(),h=getHeight();
-    int bg=room==1?0xFFFFE8F0:room==2?0xFFE8F2FF:room==3?0xFFE2FAF5:0xFFFFF0D8;canvas.drawColor(bg);
-    // Decoración distinta y reconocible en cada habitación.
-    if(room==0){circle(canvas,w*.18f,h*.20f,dp(13),0xFFFFB7CB);circle(canvas,w*.22f,h*.17f,dp(9),0xFFFFD36E);oval(canvas,w*.08f,h*.70f,w*.30f,h*.84f,0xFF9BD28B);oval(canvas,w*.70f,h*.68f,w*.92f,h*.84f,0xFF9BD28B);}
-    else if(room==1){oval(canvas,w*.12f,h*.57f,w*.88f,h*.87f,0xFFFFC7D9);oval(canvas,w*.18f,h*.53f,w*.82f,h*.79f,0xFFFFF8FB);oval(canvas,w*.15f,h*.48f,w*.85f,h*.62f,0xFFB7D8F5);circle(canvas,w*.78f,h*.18f,dp(20),0xFFFFD36E);}
-    else if(room==2){oval(canvas,w*.08f,h*.57f,w*.92f,h*.88f,0xFFB7C9E8);oval(canvas,w*.15f,h*.52f,w*.85f,h*.78f,0xFFE7DDF8);oval(canvas,w*.05f,h*.28f,w*.28f,h*.56f,0xFF8BCB9A);oval(canvas,w*.72f,h*.28f,w*.95f,h*.56f,0xFF8BCB9A);}
-    else {oval(canvas,w*.08f,h*.60f,w*.92f,h*.88f,0xFFB9E9E0);oval(canvas,w*.12f,h*.56f,w*.88f,h*.79f,0xFFEFFFFB);circle(canvas,w*.78f,h*.23f,dp(25),0xFF9DD8F4);circle(canvas,w*.78f,h*.23f,dp(15),0xFFEFFFFB);}
+    int bg=room==0?0xFFFFE6C7:room==1?0xFFFFEBCF:room==2?0xFFE2FAF5:room==3?0xFFFFE8F0:0xFFE4F3D8;canvas.drawColor(bg);
+    // Paredes, suelo y muebles distintos por zona de la casa.
+    p.setStyle(Paint.Style.FILL);
+    if(room==0){ // salón: sofá, alfombra y lámpara
+      oval(canvas,w*.08f,h*.62f,w*.92f,h*.94f,0xFFFFF3C9);
+      p.setColor(0xFF79C85A);canvas.drawRoundRect(new RectF(w*.20f,h*.40f,w*.80f,h*.72f),dp(28),dp(28),p);
+      p.setColor(0xFF65B94B);canvas.drawRoundRect(new RectF(w*.15f,h*.53f,w*.30f,h*.78f),dp(18),dp(18),p);canvas.drawRoundRect(new RectF(w*.70f,h*.53f,w*.85f,h*.78f),dp(18),dp(18),p);
+      p.setColor(0xFFFFD77A);canvas.drawRect(w*.82f,h*.28f,w*.85f,h*.63f,p);circle(canvas,w*.835f,h*.25f,dp(20),0xFFFFF4C7);
+    } else if(room==1){ // cocina: ventana, encimera y armarios
+      p.setColor(0xFFB5DFF2);canvas.drawRoundRect(new RectF(w*.65f,h*.12f,w*.90f,h*.38f),dp(12),dp(12),p);
+      p.setColor(0xFFFFC77A);canvas.drawRoundRect(new RectF(w*.08f,h*.47f,w*.92f,h*.70f),dp(10),dp(10),p);
+      p.setColor(0xFFFFF8E9);canvas.drawRect(w*.10f,h*.50f,w*.90f,h*.57f,p);
+      p.setColor(0xFFD99A52);canvas.drawRect(w*.12f,h*.70f,w*.88f,h*.75f,p);
+      p.setColor(0xFFB6D9A0);canvas.drawRoundRect(new RectF(w*.18f,h*.18f,w*.48f,h*.40f),dp(8),dp(8),p);
+      circle(canvas,w*.72f,h*.46f,dp(8),0xFF8ACBEA);
+    } else if(room==2){ // baño: bañera, azulejos y espejo
+      for(int x=0;x<4;x++)for(int y=0;y<3;y++){p.setColor(0x3374C9D8);canvas.drawRect(x*w/4f,y*h/4f,(x+1)*w/4f-1,(y+1)*h/4f-1,p);}
+      p.setColor(0xFFFFFFFF);canvas.drawRoundRect(new RectF(w*.12f,h*.58f,w*.88f,h*.86f),dp(35),dp(35),p);
+      p.setColor(0xFF9DD8F4);canvas.drawRoundRect(new RectF(w*.18f,h*.61f,w*.82f,h*.78f),dp(28),dp(28),p);
+      p.setColor(0xFF8BC8E8);canvas.drawRoundRect(new RectF(w*.67f,h*.12f,w*.87f,h*.38f),dp(24),dp(24),p);
+    } else if(room==3){ // dormitorio: cama, almohada y luna
+      oval(canvas,w*.10f,h*.60f,w*.90f,h*.94f,0xFFFFC7D9);
+      p.setColor(0xFFD69CB6);canvas.drawRoundRect(new RectF(w*.12f,h*.48f,w*.88f,h*.84f),dp(20),dp(20),p);
+      p.setColor(0xFFFFF8FB);canvas.drawRoundRect(new RectF(w*.18f,h*.52f,w*.82f,h*.77f),dp(18),dp(18),p);
+      circle(canvas,w*.80f,h*.18f,dp(20),0xFFFFD36E);
+    } else { // jardín
+      circle(canvas,w*.18f,h*.20f,dp(13),0xFFFFB7CB);circle(canvas,w*.22f,h*.17f,dp(9),0xFFFFD36E);
+      oval(canvas,w*.08f,h*.70f,w*.30f,h*.84f,0xFF9BD28B);oval(canvas,w*.70f,h*.68f,w*.92f,h*.84f,0xFF9BD28B);
+    }
+    p.setColor(0x337A547F);canvas.drawRect(0,h*.88f,w,h,p);
     p.setColor(0x22FFFFFF);p.setStyle(Paint.Style.FILL);canvas.drawCircle(w*.18f,h*.18f,dp(42),p);canvas.drawCircle(w*.82f,h*.25f,dp(52),p);
     p.setColor(0x337A547F);canvas.drawRect(0,h*.82f,w,h,p);
     canvas.save();canvas.translate(w/2f,h*.54f);float s=Math.min(w/260f,h/250f);canvas.scale(s,s);
