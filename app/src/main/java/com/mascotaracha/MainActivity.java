@@ -278,10 +278,11 @@ public class MainActivity extends Activity {
       int response=c.getResponseCode();String body=readResponse(c);if(response<200||response>=300)throw new Exception("Supabase HTTP "+response+": "+body);
       JSONArray rows=new JSONArray(body);if(rows.length()==0)throw new Exception("Todavía no hay actualizaciones publicadas.");
       JSONObject update=rows.getJSONObject(0);int latest=update.optInt("version_code",0);int installed=1;try{installed=getPackageManager().getPackageInfo(getPackageName(),0).versionCode;}catch(Exception ignored){}
+      final int latestVersion=latest;final int installedVersion=installed;
       runOnUiThread(()->{
         String title=update.optString("title","Novedades de MimoPets");String notes=update.optString("notes","Mejoras y correcciones.");String version=update.optString("version_name","Nueva versión");String apk=update.optString("apk_url","");
-        if(latestVersion<=installedVersion){new AlertDialog.Builder(this).setTitle("¡Ya tienes MimoPets actualizado! 💚").setMessage("Versión instalada: "+version+"\\n\\nNo hay versiones nuevas por ahora.").setPositiveButton("Genial",null).show();return;}
-        AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle("✨ "+title).setMessage("Nueva versión "+version+"\\n\\n"+notes+"\\n\\nTu versión: "+installed).setNegativeButton("Después",null);
+        if(latestVersion<=installedVersion){new AlertDialog.Builder(this).setTitle("¡Ya tienes MimoPets actualizado! 💚").setMessage("Versión instalada: "+installedVersion+"\\n\\nNo hay versiones nuevas por ahora.").setPositiveButton("Genial",null).show();return;}
+        AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle("✨ "+title).setMessage("Nueva versión "+version+"\\n\\n"+notes+"\\n\\nTu versión: "+installedVersion).setNegativeButton("Después",null);
         if(apk.startsWith("https://"))dialog.setPositiveButton("Descargar actualización",(d,w)->{try{Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(apk));startActivity(open);}catch(Exception e){toast("No se pudo abrir el enlace de descarga.");}});else dialog.setPositiveButton("Entendido",null);
         dialog.show();
       });
