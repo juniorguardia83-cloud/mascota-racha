@@ -18,8 +18,8 @@ public class MainActivity extends Activity {
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
   SharedPreferences prefs; JSONObject state; TextView status,stats,missionText,walletText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar; ImageView profilePhoto;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
-  String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
-  int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
+  String[] clothes={"Lazo de cereza","Corona de princesa","Gafas estelares","Bufanda de nube","Flor de sakura","Diadema galaxia","Alas de hada","Collar de cristal","Disfraz abejorro","Gorra streetwear","Moño de corazón","Capa arcoíris","Vestido real","Traje astronauta","Pijama de osito","Chaqueta pastel","Vestido de gala","Armadura dragón","Kimono floral","Conjunto celestial"};
+  int[] prices={120,450,180,160,140,220,680,520,390,260,300,750,1200,1800,850,980,2400,3200,1600,4500};
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
   public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();if(state.optString("pet","").length()>0&&!state.optBoolean("pet_selected",false)){try{state.put("pet_selected",true);state.put("egg_hatched",true);prefs.edit().putString("state",state.toString()).apply();}catch(Exception ignored){}}missionIndex=Math.abs(day().hashCode())%missions.length;splashPage();new Handler().postDelayed(()->{buildUI();if(prefs.getBoolean("signed_in",false))syncCloud();},1500);}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
@@ -125,8 +125,7 @@ public class MainActivity extends Activity {
     row2.addView(dashCard("Sueño","Mira su energía y descanso","🌙",0xFFDDF1FC,1),new LinearLayout.LayoutParams(0,dp(158),1));
     row2.addView(dashCard("Nuestros días","Celebra tu racha diaria","💗",0xFFFFE0D2,0),new LinearLayout.LayoutParams(0,dp(158),1));
     LinearLayout row3=new LinearLayout(this);row3.setOrientation(0);row3.setGravity(Gravity.CENTER);root.addView(row3);
-    row3.addView(dashCard("Te extraño","Comparte un mensaje","💌",0xFFF9DDF2,4),new LinearLayout.LayoutParams(0,dp(158),1));
-    row3.addView(dashCard("Mi estado","Tu perfil y recuerdos","🌿",0xFFDDE4FF,4),new LinearLayout.LayoutParams(0,dp(158),1));
+    row3.addView(dashCard("Widget compartido","Invita a alguien a cuidar contigo","💌",0xFFF9DDF2,4),new LinearLayout.LayoutParams(0,dp(158),1));
     LinearLayout row4=new LinearLayout(this);row4.setGravity(Gravity.CENTER);root.addView(row4);
     row4.addView(dashCard("Minijuegos","Juega y gana monedas","🎮",0xFFDDF1FC,5),new LinearLayout.LayoutParams(0,dp(150),1));
     row4.addView(dashCard("La casita","Explora cada habitación","🏡",0xFFE7E1FF,2),new LinearLayout.LayoutParams(0,dp(150),1));
@@ -147,7 +146,7 @@ public class MainActivity extends Activity {
     PetView mascotIcon=new PetView(this);mascotIcon.setPet(character);mascotIcon.setRoom(5);mascotIcon.setOutfit(title.equals("Sueño")?3:title.equals("Nuestros días")?0:title.equals("Minijuegos")?1:-1);
     c.addView(mascotIcon,new LinearLayout.LayoutParams(-1,dp(76)));
     c.addView(txt(title,18,true));TextView sub=txt(subtitle,12,false);sub.setTextColor(0xFF776B72);c.addView(sub);
-    c.setOnTouchListener((view,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_DOWN)view.animate().scaleX(.97f).scaleY(.97f).setDuration(90).start();else if(event.getAction()==android.view.MotionEvent.ACTION_UP||event.getAction()==android.view.MotionEvent.ACTION_CANCEL)view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();return false;});c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
+    c.setOnTouchListener((view,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_DOWN)view.animate().scaleX(.97f).scaleY(.97f).setDuration(90).start();else if(event.getAction()==android.view.MotionEvent.ACTION_UP||event.getAction()==android.view.MotionEvent.ACTION_CANCEL)view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();return false;});c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Widget compartido"))sharedInviteDialog();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
     return c;
   }
   void petsPage(){
@@ -185,17 +184,34 @@ public class MainActivity extends Activity {
     TextView roomName=txt(new String[]{"Jardín 🌷","Dormitorio 🛏️","Sala 🛋️","Baño 🫧","Cocina 🍳"}[Math.min(4,state.optInt("room",0))],17,true);roomName.setGravity(Gravity.CENTER);scene.addView(roomName);
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));scene.addView(petView,new LinearLayout.LayoutParams(-1,dp(330)));
     petView.setOnTouchListener((v,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_UP){roomFurnitureAction(event.getX()/v.getWidth(),event.getY()/v.getHeight());}return true;});
+    section("Tus hogares · hasta 5 casas");houseSelector();
     section("Toca los muebles para interactuar ✨");
     root.addView(txt("La mesa, el sofá, la nevera, el inodoro, la ducha y la cama tienen acciones. ¡Prueba tocando cada objeto!",13,false));
     Button fridge=btn("🧊 Abrir nevera · Comprar comida");root.addView(fridge);fridge.setOnClickListener(v->openFridge());
     Button games=btn("🎮 Jugar con "+pet()+" y ganar monedas");root.addView(games);games.setOnClickListener(v->gamesPage());
     Button wardrobe=btn("👗 Abrir armario y ropa");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
   }
+  void houseSelector(){
+    LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER);root.addView(row);
+    int current=Math.max(1,state.optInt("active_house",1));
+    for(int i=1;i<=5;i++){final int n=i;Button b=btn("Casa "+i+(current==i?" ✓":""));b.setTextSize(10);row.addView(b,new LinearLayout.LayoutParams(0,dp(42),1));b.setOnClickListener(v->{try{state.put("active_house",n);JSONArray houses=state.optJSONArray("houses");if(houses==null){houses=new JSONArray();for(int k=0;k<5;k++)houses.put(new JSONArray());state.put("houses",houses);}save();showTab(2);}catch(Exception ignored){}});}
+    root.addView(txt("Cada casa admite hasta 4 mascotas · 5 casas en total",12,false));
+  }
+  void sharedInviteDialog(){
+    String code=prefs.getString("shared_invite_code",null);
+    if(code==null){code="MIMO-"+Integer.toHexString(prefs.getString("uid",prefs.getString("user_email","guest")).hashCode()).toUpperCase(Locale.US);prefs.edit().putString("shared_invite_code",code).apply();}
+    LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setPadding(dp(12),dp(8),dp(12),dp(8));
+    box.addView(txt("Invita a alguien que viva en otra dirección para cuidar juntos. 💗",15,true));
+    TextView codeView=txt(code,28,true);codeView.setGravity(Gravity.CENTER);codeView.setTextColor(0xFF8B5C9E);box.addView(codeView);
+    box.addView(txt("Este código se puede compartir. La vinculación real entre cuentas y el widget compartido requiere guardar y validar invitaciones en Supabase.",12,false));
+    new AlertDialog.Builder(this).setTitle("Widget compartido 💌").setView(box).setPositiveButton("Compartir código",(d,w)->{Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,"¡Cuidemos mascotas juntos en MimoPets! Mi código: "+code);startActivity(Intent.createChooser(send,"Compartir invitación"));}).setNeutralButton("Ingresar código",(d,w)->enterInviteCode()).setNegativeButton("Cerrar",null).show();
+  }
+  void enterInviteCode(){EditText input=new EditText(this);input.setSingleLine(true);input.setHint("Código de invitación");new AlertDialog.Builder(this).setTitle("Unirse a un hogar").setView(input).setPositiveButton("Guardar",(d,w)->{String code=input.getText().toString().trim().toUpperCase(Locale.US);if(code.length()<6){toast("Escribe un código válido");return;}prefs.edit().putString("pending_invite_code",code).apply();toast("Código guardado. Falta validar la invitación con Supabase.");}).setNegativeButton("Cancelar",null).show();}
   void roomFurnitureAction(float x,float y){
     int room=state.optInt("room",0);
-    if(room==4){if(x>.68f){openFridge();}else{if(petView!=null)petView.sit();toast("¡"+pet()+" se sentó en la mesa! 🍽️");}}
+    if(room==4){if(x>.68f){openFridge();}else{if(petView!=null)petView.sit();care("fun");toast("¡"+pet()+" se sentó a comer en la mesa! 🍽️");}}
     else if(room==3){if(x>.58f){care("clean");toast("¡Ducha calentita! 🫧");}else{if(petView!=null)petView.sit();try{state.put("mood","Aliviado 😌");}catch(Exception ignored){}save();toast("¡"+pet()+" usó su inodoro! 🚽");}}
-    else if(room==1){if(x<.68f){care("energy");toast("¡A dormir en su camita! 🌙");}else{if(petView!=null)petView.pet();toast("La lamparita ilumina su habitación ✨");}}
+    else if(room==1){if(y>.55f||x<.68f){if(petView!=null)petView.sit();care("energy");toast("¡"+pet()+" se acurrucó en su cama! 🌙");}else{if(petView!=null)petView.pet();toast("La lamparita ilumina su habitación ✨");}}
     else if(room==2){if(x<.45f){if(petView!=null)petView.sit();toast("¡"+pet()+" se sentó en el sofá! 🛋️");}else{care("fun");toast("¡Jugando en la sala! 🎾");}}
     else{care("fun");toast("¡A explorar el jardín! 🌷");}
   }
