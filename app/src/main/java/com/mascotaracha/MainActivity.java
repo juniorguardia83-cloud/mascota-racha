@@ -3,6 +3,7 @@ package com.mascotaracha;
 import android.app.*;
 import android.os.*;
 import android.content.*;
+import android.net.Uri;
 import android.graphics.*;
 import android.view.*;
 import android.widget.*;
