@@ -15,12 +15,12 @@ import java.util.*;
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
-  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; ProgressBar weekBar;
+  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
   int missionIndex; LinearLayout root,missionBox,shopBox,inventoryBox,roomBox; ScrollView pageScroll;
-  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();syncCloud();}
+  public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("petgame",0);state=load();missionIndex=Math.abs(day().hashCode())%missions.length;buildUI();handleAuthIntent(getIntent());syncCloud();}
   String day(){return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
   JSONObject load(){try{return new JSONObject(prefs.getString("state","{}"));}catch(Exception e){return new JSONObject();}}
   int num(String k){return state.optInt(k,0);} String pet(){return state.optString("pet","Perrito");}
@@ -98,15 +98,27 @@ public class MainActivity extends Activity {
     section("🎒 Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);refresh();
   }
   void profilePage(){
-    header("Tu cuenta y tus recuerdos ☁️");
-    LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(account);
+    header("Tu espacio seguro y tus recuerdos ☁️");
+    LinearLayout account=card(0xFFFFFFFF);account.setOrientation(1);account.setPadding(dp(16),dp(12),dp(16),dp(12));root.addView(account);
+    account.addView(txt("💗 ¡Qué bueno verte!",20,true));
+    account.addView(txt("Entra para guardar tu mascota y continuar tu aventura en otros dispositivos.",13,false));
     emailInput=new EditText(this);emailInput.setSingleLine(true);emailInput.setHint("Correo electrónico");emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);account.addView(emailInput);
     passwordInput=new EditText(this);passwordInput.setSingleLine(true);passwordInput.setHint("Contraseña (mínimo 6 caracteres)");passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);account.addView(passwordInput);
-    LinearLayout actions=new LinearLayout(this);Button signup=btn("Crear cuenta");actions.addView(signup,new LinearLayout.LayoutParams(0,dp(48),1));Button login=btn("Iniciar sesión");actions.addView(login,new LinearLayout.LayoutParams(0,dp(48),1));account.addView(actions);
-    signup.setOnClickListener(v->account("signup"));login.setOnClickListener(v->account("login"));
+    termsCheck=new CheckBox(this);termsCheck.setText("He leído y acepto los términos y la política de privacidad");termsCheck.setTextColor(0xFF527653);account.addView(termsCheck);
+    TextView termsLink=txt("Leer términos y condiciones",13,true);termsLink.setTextColor(0xFFB45D8B);account.addView(termsLink);termsLink.setOnClickListener(v->showTerms());
+    Button signup=btn("Crear mi cuenta");account.addView(signup,new LinearLayout.LayoutParams(-1,dp(48)));
+    Button login=btn("Iniciar sesión");account.addView(login,new LinearLayout.LayoutParams(-1,dp(48)));
+    Button google=btn("🌈 Continuar con Google");account.addView(google,new LinearLayout.LayoutParams(-1,dp(48)));
+    TextView forgot=txt("¿Olvidaste tu contraseña? Recuperar acceso",13,true);forgot.setTextColor(0xFFB45D8B);account.addView(forgot);
+    signup.setOnClickListener(v->{if(termsCheck.isChecked())account("signup");else toast("Acepta los términos para crear tu cuenta.");});
+    login.setOnClickListener(v->account("login"));google.setOnClickListener(v->googleLogin());forgot.setOnClickListener(v->recoverPassword());
     section("📊 Tu aventura");root.addView(txt("🔥 Racha: "+num("streak")+" días",16,true));root.addView(txt("⭐ Nivel: "+Math.max(1,num("level")),16,true));root.addView(txt("🪙 Monedas: "+num("coins"),16,true));
     Button share=btn("📤 Compartir mi mascota");root.addView(share);share.setOnClickListener(v->sharePet());
-    status=txt("☁️ Guardado en este teléfono y sincronización con Supabase",12,false);root.addView(status);
+    status=txt("Tus avances se guardan en este teléfono. Al iniciar sesión puedes vincularlos a tu cuenta.",12,false);root.addView(status);
+  }
+  void showTerms(){
+    String text="MIMOPETS · TÉRMINOS Y PRIVACIDAD\\n\\n1. Datos de cuenta: usamos tu correo y los datos de autenticación gestionados por Supabase para crear y proteger tu cuenta. Si eliges Google, Google procesa el acceso según sus propias condiciones.\\n\\n2. Datos del juego: guardamos el nombre de tu mascota, monedas, racha, nivel, artículos, habitación y progreso para conservar tu partida y sincronizarla cuando inicies sesión.\\n\\n3. Uso: estos datos se utilizan para iniciar sesión, guardar/restaurar tu partida y mantener las funciones del juego. No vendemos tus datos ni los usamos para publicidad personalizada.\\n\\n4. Almacenamiento: los datos de cuenta y sincronización se procesan mediante Supabase. El dispositivo también puede conservar una copia local.\\n\\n5. Seguridad y control: no compartas tu contraseña. Puedes dejar de usar la app cuando quieras; para solicitar eliminación de cuenta/datos, contacta al responsable de la app.\\n\\n6. Menores: si eres menor, pide a tu madre, padre o tutor que revise estos términos.\\n\\nAl continuar declaras que has leído esta información.";
+    new AlertDialog.Builder(this).setTitle("Términos y condiciones").setMessage(text).setPositiveButton("Entendido",null).show();
   }
   android.graphics.drawable.GradientDrawable round(int color,int radius){android.graphics.drawable.GradientDrawable d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(radius);return d;}
   LinearLayout card(int color){LinearLayout x=new LinearLayout(this);x.setBackground(round(color,dp(20)));return x;}
@@ -151,19 +163,44 @@ public class MainActivity extends Activity {
   void account(String mode){
     String email=emailInput.getText().toString().trim(),password=passwordInput.getText().toString();
     if(!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()||password.length()<6){toast("Escribe un correo válido y una contraseña de 6 caracteres o más.");return;}
-    if(status!=null)status.setText("Conectando tu cuenta…");
+    if(status!=null)status.setText(mode.equals("signup")?"Creando tu cuenta…":"Iniciando sesión…");
     new Thread(()->{try{
       JSONObject body=new JSONObject();body.put("email",email);body.put("password",password);
       String endpoint=mode.equals("signup")?"/auth/v1/signup":"/auth/v1/token?grant_type=password";
-      HttpURLConnection c=(HttpURLConnection)new URL(URL+endpoint).openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(15000);c.setReadTimeout(15000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
-      int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception("No se pudo entrar: "+response);
+      HttpURLConnection c=(HttpURLConnection)new URL(URL+endpoint).openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(20000);c.setReadTimeout(20000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
+      int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));
       JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");
-      if(access.length()==0||user==null){runOnUiThread(()->{if(status!=null)status.setText("Revisa tu correo para confirmar la cuenta y luego inicia sesión.");});return;}
-      String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).apply();
-      HttpURLConnection get=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?id=eq."+uid+"&select=data").openConnection();get.setRequestProperty("apikey",KEY);get.setRequestProperty("Authorization","Bearer "+access);get.setConnectTimeout(15000);get.setReadTimeout(15000);
-      if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null){state=cloud;prefs.edit().putString("state",state.toString()).apply();}}}
-      refreshWidget();syncCloud();runOnUiThread(()->{refresh();if(status!=null)status.setText("✅ Cuenta conectada. Tu mascota está guardada en la nube.");toast("¡Cuenta conectada! ❤️");});
-    }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo conectar: "+msg);});}}).start();
+      if(access.length()==0||user==null){runOnUiThread(()->{if(status!=null)status.setText("Cuenta creada. Revisa tu correo, confirma la dirección y después inicia sesión.");toast("Te enviamos la confirmación por correo 💌");});return;}
+      saveSignedInUser(access,user);
+      runOnUiThread(()->{refresh();if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
+    }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo completar: "+msg);});}}).start();
+  }
+  String authError(String response){try{JSONObject e=new JSONObject(response);return e.optString("msg",e.optString("message",e.optString("error_description",response)));}catch(Exception ex){return response;}}
+  void saveSignedInUser(String access,JSONObject user)throws Exception{
+    String uid=user.getString("id");prefs.edit().putString("token",access).putString("uid",uid).apply();
+    HttpURLConnection get=(HttpURLConnection)new URL(URL+"/rest/v1/pet_saves?id=eq."+uid+"&select=data").openConnection();get.setRequestProperty("apikey",KEY);get.setRequestProperty("Authorization","Bearer "+access);get.setConnectTimeout(15000);get.setReadTimeout(15000);
+    if(get.getResponseCode()==200){JSONArray rows=new JSONArray(readResponse(get));if(rows.length()>0){JSONObject cloud=rows.getJSONObject(0).optJSONObject("data");if(cloud!=null){state=cloud;prefs.edit().putString("state",state.toString()).apply();}}}
+    refreshWidget();syncCloud();
+  }
+  void recoverPassword(){
+    String email=emailInput.getText().toString().trim();if(!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()){toast("Escribe primero tu correo electrónico.");return;}
+    new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/recover?redirect_to=mimopets://auth-callback").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("email",email).toString().getBytes("UTF-8"));int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->{if(status!=null)status.setText("Si el correo existe, recibirás un enlace para restablecer la contraseña.");toast("Revisa tu correo 💌");});}catch(Exception e){runOnUiThread(()->toast("No se pudo enviar el enlace: "+e.getMessage()));}}).start();
+  }
+  void googleLogin(){
+    try{String redirect=URLEncoder.encode("mimopets://auth-callback","UTF-8");String url=URL+"/auth/v1/authorize?provider=google&redirect_to="+redirect;startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));if(status!=null)status.setText("Abriendo Google…");}
+    catch(Exception e){toast("No se pudo abrir el acceso con Google.");}
+  }
+  @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleAuthIntent(intent);}
+  void handleAuthIntent(Intent intent){
+    if(intent==null||intent.getData()==null)return;String fragment=intent.getData().getFragment();if(fragment==null)return;
+    String token=null;String type="";for(String part:fragment.split("&")){String[] kv=part.split("=",2);if(kv.length==2){if(kv[0].equals("access_token"))token=Uri.decode(kv[1]);if(kv[0].equals("type"))type=Uri.decode(kv[1]);}}
+    if(token==null)return;final String access=token;
+    if("recovery".equals(type)){prefs.edit().putString("recovery_token",access).apply();runOnUiThread(()->newPasswordDialog(access));return;}
+    new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{showTab(4);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta de Google."));}}).start();
+  }
+  void newPasswordDialog(String access){
+    EditText input=new EditText(this);input.setHint("Nueva contraseña (mínimo 6 caracteres)");input.setInputType(129);
+    new AlertDialog.Builder(this).setTitle("Crear nueva contraseña").setView(input).setPositiveButton("Guardar",(d,w)->{String pass=input.getText().toString();if(pass.length()<6){toast("Usa al menos 6 caracteres.");return;}new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestMethod("PUT");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("password",pass).toString().getBytes("UTF-8"));int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));runOnUiThread(()->toast("Contraseña actualizada. Ya puedes iniciar sesión."));}catch(Exception e){runOnUiThread(()->toast("No se pudo cambiar: "+e.getMessage()));}}).start();}).setNegativeButton("Cancelar",null).show();
   }
   String readResponse(HttpURLConnection c)throws Exception{InputStream in=c.getResponseCode()<400?c.getInputStream():c.getErrorStream();if(in==null)return "";ByteArrayOutputStream b=new ByteArrayOutputStream();byte[] buf=new byte[2048];int n;while((n=in.read(buf))>0)b.write(buf,0,n);return b.toString("UTF-8");}
   void syncCloud(){new Thread(()->{try{
