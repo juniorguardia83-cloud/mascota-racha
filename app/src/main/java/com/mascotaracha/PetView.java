@@ -39,10 +39,11 @@ public class PetView extends View {
     float idle=(float)Math.sin(elapsed/520.0);
     float bounce=idle*2+(System.currentTimeMillis()<reactionUntil?(float)Math.abs(Math.sin(elapsed/75.0))*13:0);
     float sway=(float)Math.sin(elapsed/430.0)*3;
-    canvas.save();canvas.rotate(sway,0,0);
-    canvas.save();canvas.rotate((float)Math.sin(elapsed/95.0)*22,52,45+bounce);oval(canvas,48,27+bounce,91,62+bounce,fur);canvas.restore();
     int fur=animal.equals("Pandita")?Color.rgb(45,42,48):animal.equals("Gatito")?Color.rgb(245,177,205):animal.equals("Conejito")?Color.rgb(238,224,207):Color.rgb(207,151,105);
     int dark=Color.rgb(65,48,52);
+    float reactionTurn=System.currentTimeMillis()<reactionUntil?(float)Math.sin(elapsed/115.0)*7:0;
+    canvas.save();canvas.rotate(sway+reactionTurn,0,0);
+    canvas.save();canvas.rotate((float)Math.sin(elapsed/95.0)*22,52,45+bounce);oval(canvas,48,27+bounce,91,62+bounce,fur);canvas.restore();
     // sombra, cuerpo y patas
     oval(canvas,-76,88,76,110,0x337D568B);
     oval(canvas,-65,5+bounce,65,100+bounce,fur);
