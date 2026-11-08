@@ -261,11 +261,31 @@ public class MainActivity extends Activity {
 
     TextView session=txt("✓ Sesión iniciada",17,true);session.setTextColor(0xFF3C8B55);account.addView(session);
     TextView sessionInfo=txt("Tu cuenta está conectada. Tus monedas, mascotas y progreso se guardan en este dispositivo y se sincronizan con Supabase.",13,false);account.addView(sessionInfo);
+    Button updates=btn("✨ Ver actualizaciones");account.addView(updates,new LinearLayout.LayoutParams(-1,dp(48)));updates.setOnClickListener(v->checkAppUpdates());
     Button signOut=btn("Cerrar sesión");account.addView(signOut,new LinearLayout.LayoutParams(-1,dp(48)));
     signOut.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("¿Cerrar sesión?").setMessage("Tu progreso guardado permanecerá en este teléfono.").setNegativeButton("Cancelar",null).setPositiveButton("Cerrar sesión",(d,w)->{prefs.edit().putBoolean("signed_in",false).remove("token").remove("uid").apply();buildUI();}).show());
     section("📊 Tu aventura");root.addView(txt("🔥 Racha: "+num("streak")+" días",16,true));root.addView(txt("⭐ Nivel: "+Math.max(1,num("level")),16,true));root.addView(txt("🪙 Monedas: "+num("coins"),16,true));
     Button share=btn("📤 Compartir mi mascota");root.addView(share);share.setOnClickListener(v->sharePet());
     status=txt("☁️ Tu aventura está vinculada a tu cuenta.",12,false);root.addView(status);
+  }
+
+  void checkAppUpdates(){
+    toast("Buscando novedades de MimoPets…");
+    new Thread(()->{try{
+      String token=prefs.getString("token","");
+      HttpURLConnection c=(HttpURLConnection)new URL(URL+"/rest/v1/app_updates?select=version_code,version_name,title,notes,apk_url,published_at&is_published=eq.true&order=version_code.desc&limit=1").openConnection();
+      c.setRequestMethod("GET");c.setConnectTimeout(15000);c.setReadTimeout(15000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+token);c.setRequestProperty("Accept","application/json");
+      int response=c.getResponseCode();String body=readResponse(c);if(response<200||response>=300)throw new Exception("Supabase HTTP "+response+": "+body);
+      JSONArray rows=new JSONArray(body);if(rows.length()==0)throw new Exception("Todavía no hay actualizaciones publicadas.");
+      JSONObject update=rows.getJSONObject(0);int latest=update.optInt("version_code",0);int installed=1;try{installed=getPackageManager().getPackageInfo(getPackageName(),0).versionCode;}catch(Exception ignored){}
+      runOnUiThread(()->{
+        String title=update.optString("title","Novedades de MimoPets");String notes=update.optString("notes","Mejoras y correcciones.");String version=update.optString("version_name","Nueva versión");String apk=update.optString("apk_url","");
+        if(latest<=installed){new AlertDialog.Builder(this).setTitle("¡Ya tienes MimoPets actualizado! 💚").setMessage("Versión instalada: "+version+"\\n\\nNo hay versiones nuevas por ahora.").setPositiveButton("Genial",null).show();return;}
+        AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle("✨ "+title).setMessage("Nueva versión "+version+"\\n\\n"+notes+"\\n\\nTu versión: "+installed).setNegativeButton("Después",null);
+        if(apk.startsWith("https://"))dialog.setPositiveButton("Descargar actualización",(d,w)->{try{Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(apk));startActivity(open);}catch(Exception e){toast("No se pudo abrir el enlace de descarga.");}});else dialog.setPositiveButton("Entendido",null);
+        dialog.show();
+      });
+    }catch(Exception e){String msg=e.getMessage()==null?"No se pudo consultar Supabase":e.getMessage();runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Actualizaciones 💚").setMessage(msg+"\\n\\nComprueba tu conexión e inténtalo de nuevo.").setPositiveButton("Aceptar",null).show());}}).start();
   }
   void showTerms(){
     String text="MIMOPETS · TÉRMINOS Y PRIVACIDAD\\n\\n1. Datos de cuenta: usamos tu correo y los datos de autenticación gestionados por Supabase para crear y proteger tu cuenta. El acceso se realiza mediante correo electrónico y contraseña gestionados por Supabase.\\n\\n2. Datos del juego: guardamos el nombre de tu mascota, monedas, racha, nivel, artículos, habitación y progreso para conservar tu partida y sincronizarla cuando inicies sesión.\\n\\n3. Uso: estos datos se utilizan para iniciar sesión, guardar/restaurar tu partida y mantener las funciones del juego. No vendemos tus datos ni los usamos para publicidad personalizada.\\n\\n4. Almacenamiento: los datos de cuenta y sincronización se procesan mediante Supabase. El dispositivo también puede conservar una copia local.\\n\\n5. Seguridad y control: no compartas tu contraseña. Puedes dejar de usar la app cuando quieras; para solicitar eliminación de cuenta/datos, contacta al responsable de la app.\\n\\n6. Menores: si eres menor, pide a tu madre, padre o tutor que revise estos términos.\\n\\nAl continuar declaras que has leído esta información.";
