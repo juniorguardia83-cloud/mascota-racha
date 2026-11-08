@@ -81,21 +81,36 @@ public class MainActivity extends Activity {
     pageScroll.post(()->pageScroll.scrollTo(0,0));
   }
   void homePage(){
-    header("Tu pequeño mundo feliz 🌿");
-    LinearLayout wallet=card(0xFFE4F2DD);wallet.setPadding(dp(12),dp(6),dp(12),dp(6));stats=txt("",15,true);stats.setTextColor(0xFF47794B);wallet.addView(stats);root.addView(wallet);
-    LinearLayout hero=card(0xFFDDF0D5);hero.setOrientation(1);hero.setPadding(dp(14),dp(10),dp(14),dp(10));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(12);root.addView(hero,hp);
-    hero.addView(txt("¡Tu mascota te extrañó! 💚",19,true));hero.addView(txt("Tócala para darle cariño y verla moverse",13,false));
-    petView=new PetView(this);hero.addView(petView,new LinearLayout.LayoutParams(-1,dp(255)));
-    petView.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){petView.pet();toast("¡"+pet()+" está feliz! 💗");return true;}return true;});
-    section("🎯 Misión de hoy");LinearLayout mission=card(0xFFFFE8F0);mission.setOrientation(1);mission.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(mission);
-    missionText=txt("",16,true);missionText.setTextColor(0xFF98536F);mission.addView(missionText);
-    Button done=btn("Completar misión  ·  +10 🪙");mission.addView(done);done.setOnClickListener(v->completeMission());
-    section("🔥 Tu racha");LinearLayout streak=card(0xFFFFF1D9);streak.setOrientation(1);streak.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(streak);
-    streak.addView(txt("¡Cada día juntos desbloquea premios!",15,true));weekBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);weekBar.setMax(7);streak.addView(weekBar,new LinearLayout.LayoutParams(-1,dp(12)));
-    streak.addView(txt("Lun   Mar   Mié   Jue   Vie   Sáb   Dom",12,true));
-    Button goPets=btn("🐾 Cuidar a mi mascota");root.addView(goPets);goPets.setOnClickListener(v->showTab(1));
-    Button goHome=btn("🏡 Decorar mi casita");root.addView(goHome);goHome.setOnClickListener(v->showTab(2));
-    refresh();
+    header("Tu mundo para compartir 💚");
+    LinearLayout welcome=card(0xFFE5F5DE);welcome.setOrientation(1);welcome.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(welcome);
+    welcome.addView(txt("¡Hola, "+prefs.getString("profile_name","amig@")+"! 🐾",21,true));
+    welcome.addView(txt("Cuida a tus mascotas y crea recuerdos cada día.",13,false));
+    LinearLayout row1=new LinearLayout(this);row1.setOrientation(0);row1.setGravity(Gravity.CENTER);root.addView(row1);
+    row1.addView(dashCard("Mascotas","Cuida y juega con ellas","🐱",0xFFFFE5B2,1),new LinearLayout.LayoutParams(0,dp(158),1));
+    row1.addView(dashCard("Rastreador","Misiones y actividades","🎯",0xFFFFDDE8,1),new LinearLayout.LayoutParams(0,dp(158),1));
+    LinearLayout row2=new LinearLayout(this);row2.setOrientation(0);row2.setGravity(Gravity.CENTER);root.addView(row2);
+    row2.addView(dashCard("Sueño","Mira su energía y descanso","🌙",0xFFDDF1FC,1),new LinearLayout.LayoutParams(0,dp(158),1));
+    row2.addView(dashCard("Nuestros días","Celebra tu racha diaria","💗",0xFFFFE0D2,0),new LinearLayout.LayoutParams(0,dp(158),1));
+    LinearLayout row3=new LinearLayout(this);row3.setOrientation(0);row3.setGravity(Gravity.CENTER);root.addView(row3);
+    row3.addView(dashCard("Te extraño","Comparte un mensaje","💌",0xFFF9DDF2,4),new LinearLayout.LayoutParams(0,dp(158),1));
+    row3.addView(dashCard("Mi estado","Tu perfil y recuerdos","🌿",0xFFDDE4FF,4),new LinearLayout.LayoutParams(0,dp(158),1));
+    section("🐾 Tu compañero de hoy");
+    LinearLayout petCard=card(0xFFF1F8E9);petCard.setOrientation(1);petCard.setPadding(dp(10),dp(6),dp(10),dp(8));root.addView(petCard);
+    petCard.addView(txt("¡"+pet()+" te está esperando!",17,true));
+    petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));petCard.addView(petView,new LinearLayout.LayoutParams(-1,dp(190)));
+    petView.setOnClickListener(v->{petView.pet();toast("¡"+pet()+" está feliz! 💗");});
+    section("🔥 Tu racha");
+    LinearLayout streak=card(0xFFFFF1D9);streak.setOrientation(1);streak.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(streak);
+    streak.addView(txt("Llevas "+num("streak")+" días cuidando de tu mascota",15,true));
+    ProgressBar bar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);bar.setMax(7);bar.setProgress(num("weekProgress"));streak.addView(bar,new LinearLayout.LayoutParams(-1,dp(12)));
+    Button mission=btn("🎁 Completar misión de hoy · +10 🪙");root.addView(mission);mission.setOnClickListener(v->completeMission());
+  }
+  LinearLayout dashCard(String title,String subtitle,String emoji,int color,int tab){
+    LinearLayout c=card(color);c.setOrientation(1);c.setPadding(dp(12),dp(8),dp(8),dp(8));c.setGravity(Gravity.CENTER_VERTICAL);
+    TextView tag=txt(emoji,31,true);c.addView(tag);
+    c.addView(txt(title,18,true));TextView sub=txt(subtitle,12,false);sub.setTextColor(0xFF776B72);c.addView(sub);
+    LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)c.getLayoutParams();c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else showTab(tab);});
+    return c;
   }
   void petsPage(){
     header("Conoce y cuida a tus compañeros 🐾");
