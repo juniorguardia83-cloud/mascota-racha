@@ -147,7 +147,7 @@ public class MainActivity extends Activity {
     PetView mascotIcon=new PetView(this);mascotIcon.setPet(character);mascotIcon.setRoom(5);mascotIcon.setOutfit(title.equals("Sueño")?3:title.equals("Nuestros días")?0:title.equals("Minijuegos")?1:-1);
     c.addView(mascotIcon,new LinearLayout.LayoutParams(-1,dp(76)));
     c.addView(txt(title,18,true));TextView sub=txt(subtitle,12,false);sub.setTextColor(0xFF776B72);c.addView(sub);
-    LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)c.getLayoutParams();c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
+    c.setOnTouchListener((view,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_DOWN)view.animate().scaleX(.97f).scaleY(.97f).setDuration(90).start();else if(event.getAction()==android.view.MotionEvent.ACTION_UP||event.getAction()==android.view.MotionEvent.ACTION_CANCEL)view.animate().scaleX(1f).scaleY(1f).setDuration(140).start();return false;});c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
     return c;
   }
   void petsPage(){
@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
     else{care("fun");toast("¡A explorar el jardín! 🌷");}
   }
   void openFridge(){
-    String[] foods={"🍓 Fresas · 10 monedas","+🥕 Zanahorias · 15 monedas","🍰 Pastelito · 20 monedas"};
+    String[] foods={"🍓 Fresas · 10 monedas","🥕 Zanahorias · 15 monedas","🍰 Pastelito · 20 monedas"};
     new AlertDialog.Builder(this).setTitle("Nevera de MimoPets 🧊").setItems(foods,(d,which)->{int[] costs={10,15,20};if(num("coins")<costs[which]){toast("Te faltan monedas. ¡Gana más jugando! 🎮");gamesPage();return;}try{state.put("coins",num("coins")-costs[which]);state.put("food",Math.min(100,num("food")+new int[]{25,35,50}[which]));state.put("last_food",foods[which]);}catch(Exception ignored){}save();if(petView!=null)petView.pet();toast("¡"+pet()+" disfrutó su comida! 💗");showTab(2);}).setNegativeButton("Cerrar",null).show();
   }
   void shopPage(){
