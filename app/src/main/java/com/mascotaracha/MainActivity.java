@@ -127,6 +127,9 @@ public class MainActivity extends Activity {
     LinearLayout row3=new LinearLayout(this);row3.setOrientation(0);row3.setGravity(Gravity.CENTER);root.addView(row3);
     row3.addView(dashCard("Te extraño","Comparte un mensaje","💌",0xFFF9DDF2,4),new LinearLayout.LayoutParams(0,dp(158),1));
     row3.addView(dashCard("Mi estado","Tu perfil y recuerdos","🌿",0xFFDDE4FF,4),new LinearLayout.LayoutParams(0,dp(158),1));
+    LinearLayout row4=new LinearLayout(this);row4.setGravity(Gravity.CENTER);root.addView(row4);
+    row4.addView(dashCard("Minijuegos","Juega y gana monedas","🎮",0xFFDDF1FC,5),new LinearLayout.LayoutParams(0,dp(150),1));
+    row4.addView(dashCard("La casita","Explora cada habitación","🏡",0xFFE7E1FF,2),new LinearLayout.LayoutParams(0,dp(150),1));
     section("🐾 Tu compañero de hoy");
     LinearLayout petCard=card(0xFFF1F8E9);petCard.setOrientation(1);petCard.setPadding(dp(10),dp(6),dp(10),dp(8));root.addView(petCard);
     petCard.addView(txt("¡"+pet()+" te está esperando!",17,true));
@@ -140,7 +143,9 @@ public class MainActivity extends Activity {
   }
   LinearLayout dashCard(String title,String subtitle,String emoji,int color,int tab){
     LinearLayout c=card(color);c.setOrientation(1);c.setPadding(dp(12),dp(8),dp(8),dp(8));c.setGravity(Gravity.CENTER_VERTICAL);
-    TextView tag=txt(emoji,31,true);c.addView(tag);
+    String character=title.equals("Sueño")?"Conejito":title.equals("Rastreador")?"Pandita":title.equals("Nuestros días")?"Gatito":title.equals("Te extraño")?"Perrito":title.equals("Minijuegos")?"Zorrito":title.equals("La casita")?"Osito":"Gatito";
+    PetView mascotIcon=new PetView(this);mascotIcon.setPet(character);mascotIcon.setRoom(5);mascotIcon.setOutfit(title.equals("Sueño")?3:title.equals("Nuestros días")?0:title.equals("Minijuegos")?1:-1);
+    c.addView(mascotIcon,new LinearLayout.LayoutParams(-1,dp(76)));
     c.addView(txt(title,18,true));TextView sub=txt(subtitle,12,false);sub.setTextColor(0xFF776B72);c.addView(sub);
     LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)c.getLayoutParams();c.setOnClickListener(v->{if(tab==4&&title.equals("Te extraño"))sharePet();else if(tab==5)gamesPage();else if(title.equals("Estado de ánimo"))moodDialog();else showTab(tab);});
     return c;
@@ -179,11 +184,24 @@ public class MainActivity extends Activity {
     LinearLayout scene=card(0xFFFFDFAE);scene.setOrientation(1);scene.setPadding(dp(5),dp(5),dp(5),dp(5));root.addView(scene);
     TextView roomName=txt(new String[]{"Jardín 🌷","Dormitorio 🛏️","Sala 🛋️","Baño 🫧","Cocina 🍳"}[Math.min(4,state.optInt("room",0))],17,true);roomName.setGravity(Gravity.CENTER);scene.addView(roomName);
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));scene.addView(petView,new LinearLayout.LayoutParams(-1,dp(330)));
-    section("Acciones de la casa");
-    String[] actions={"🍎 Preparar comida","🧸 Jugar en el salón","🫧 Bañar a "+pet(),"🌙 Llevar a dormir"};
-    String[] keys={"food","fun","clean","energy"};
-    for(int i=0;i<actions.length;i++){final String k=keys[i];Button b=btn(actions[i]);root.addView(b);b.setOnClickListener(v->{care(k);});}
+    petView.setOnTouchListener((v,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_UP){roomFurnitureAction(event.getX()/v.getWidth(),event.getY()/v.getHeight());}return true;});
+    section("Toca los muebles para interactuar ✨");
+    root.addView(txt("La mesa, el sofá, la nevera, el inodoro, la ducha y la cama tienen acciones. ¡Prueba tocando cada objeto!",13,false));
+    Button fridge=btn("🧊 Abrir nevera · Comprar comida");root.addView(fridge);fridge.setOnClickListener(v->openFridge());
+    Button games=btn("🎮 Jugar con "+pet()+" y ganar monedas");root.addView(games);games.setOnClickListener(v->gamesPage());
     Button wardrobe=btn("👗 Abrir armario y ropa");root.addView(wardrobe);wardrobe.setOnClickListener(v->showTab(3));
+  }
+  void roomFurnitureAction(float x,float y){
+    int room=state.optInt("room",0);
+    if(room==4){if(x>.68f){openFridge();}else{if(petView!=null)petView.sit();toast("¡"+pet()+" se sentó en la mesa! 🍽️");}}
+    else if(room==3){if(x>.58f){care("clean");toast("¡Ducha calentita! 🫧");}else{if(petView!=null)petView.sit();try{state.put("mood","Aliviado 😌");}catch(Exception ignored){}save();toast("¡"+pet()+" usó su inodoro! 🚽");}}
+    else if(room==1){if(x<.68f){care("energy");toast("¡A dormir en su camita! 🌙");}else{if(petView!=null)petView.pet();toast("La lamparita ilumina su habitación ✨");}}
+    else if(room==2){if(x<.45f){if(petView!=null)petView.sit();toast("¡"+pet()+" se sentó en el sofá! 🛋️");}else{care("fun");toast("¡Jugando en la sala! 🎾");}}
+    else{care("fun");toast("¡A explorar el jardín! 🌷");}
+  }
+  void openFridge(){
+    String[] foods={"🍓 Fresas · 10 monedas","+🥕 Zanahorias · 15 monedas","🍰 Pastelito · 20 monedas"};
+    new AlertDialog.Builder(this).setTitle("Nevera de MimoPets 🧊").setItems(foods,(d,which)->{int[] costs={10,15,20};if(num("coins")<costs[which]){toast("Te faltan monedas. ¡Gana más jugando! 🎮");gamesPage();return;}try{state.put("coins",num("coins")-costs[which]);state.put("food",Math.min(100,num("food")+new int[]{25,35,50}[which]));state.put("last_food",foods[which]);}catch(Exception ignored){}save();if(petView!=null)petView.pet();toast("¡"+pet()+" disfrutó su comida! 💗");showTab(2);}).setNegativeButton("Cerrar",null).show();
   }
   void shopPage(){
     header("La boutique de MimoPets ✨");
@@ -269,7 +287,7 @@ public class MainActivity extends Activity {
     gameCard("🍊 Juicy Merge","Combina frutas hasta llegar al nivel 5.",0xFFE3F6D9,()->playMerge());
     Button back=btn("← Volver al inicio");root.addView(back);back.setOnClickListener(v->showTab(0));
   }
-  void gameCard(String title,String sub,int color,Runnable action){LinearLayout c=card(color);c.setOrientation(1);c.setPadding(dp(14),dp(8),dp(14),dp(8));c.addView(txt(title,19,true));c.addView(txt(sub,13,false));Button play=btn("🎮 Jugar");c.addView(play);root.addView(c);play.setOnClickListener(v->action.run());}
+  void gameCard(String title,String sub,int color,Runnable action){LinearLayout c=card(color);c.setOrientation(1);c.setPadding(dp(14),dp(8),dp(14),dp(8));PetView buddy=new PetView(this);buddy.setPet(title.contains("Memoria")?"Gatito":title.contains("Puzzle")?"Conejito":"Zorrito");buddy.setRoom(5);buddy.setOutfit(0);c.addView(buddy,new LinearLayout.LayoutParams(-1,dp(92)));c.addView(txt(title,19,true));c.addView(txt(sub,13,false));Button play=btn("🎮 Jugar");c.addView(play);root.addView(c);play.setOnClickListener(v->action.run());}
   void gameReward(int coins){try{state.put("coins",num("coins")+coins);state.put("gamesPlayed",num("gamesPlayed")+1);}catch(Exception ignored){}save();toast("¡Ganaste +"+coins+" monedas! 🪙");gamesPage();}
   void playWater(){final int[] taps={0};LinearLayout box=new LinearLayout(this);box.setOrientation(1);TextView count=txt("💧 0 / 8",24,true);count.setGravity(Gravity.CENTER);box.addView(count);Button fill=btn("🥤 Llenar vaso");box.addView(fill);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Puzzle de agua").setMessage("Toca hasta llenar el vaso.").setView(box).setNegativeButton("Salir",null).create();fill.setOnClickListener(v->{taps[0]++;count.setText("💧 "+taps[0]+" / 8");if(taps[0]>=8){dialog.dismiss();gameReward(15);}});dialog.show();}
   void playMerge(){final int[] level={1};LinearLayout box=new LinearLayout(this);box.setOrientation(1);TextView fruit=txt("🍊 Nivel 1",26,true);fruit.setGravity(Gravity.CENTER);box.addView(fruit);Button merge=btn("✨ Combinar fruta");box.addView(merge);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Juicy Merge").setMessage("Combina frutas cinco veces para ganar.").setView(box).setNegativeButton("Salir",null).create();merge.setOnClickListener(v->{level[0]++;fruit.setText(new String[]{"🍊","🍎","🍐","🍇","🍉","🍍"}[Math.min(5,level[0])]+" Nivel "+level[0]);if(level[0]>=5){dialog.dismiss();gameReward(20);}});dialog.show();}
