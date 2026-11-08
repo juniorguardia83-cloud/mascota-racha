@@ -66,6 +66,16 @@ public class MainActivity extends Activity {
     TextView sub=txt(subtitle,13,false);sub.setTextColor(0xFF789078);root.addView(sub);
   }
   void showTab(int tab){
+    if(tab==2){
+      root.removeAllViews();status=null;LinearLayout loading=card(0xFFFFEBC2);loading.setOrientation(1);loading.setGravity(Gravity.CENTER);loading.setPadding(dp(20),dp(50),dp(20),dp(50));
+      TextView house=txt("🏡",58,true);house.setGravity(Gravity.CENTER);loading.addView(house);
+      TextView message=txt("Preparando tu casita…",19,true);message.setGravity(Gravity.CENTER);loading.addView(message);
+      ProgressBar spinner=new ProgressBar(this);loading.addView(spinner,new LinearLayout.LayoutParams(dp(48),dp(48)));
+      root.addView(loading,new LinearLayout.LayoutParams(-1,-1));pageScroll.postDelayed(()->showTabContent(2),700);return;
+    }
+    showTabContent(tab);
+  }
+  void showTabContent(int tab){
     root.removeAllViews();status=null;stats=null;missionText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
     if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
     pageScroll.post(()->pageScroll.scrollTo(0,0));
@@ -205,7 +215,7 @@ public class MainActivity extends Activity {
       JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");
       if(access.length()==0||user==null){runOnUiThread(()->{if(status!=null)status.setText("Cuenta creada. Revisa tu correo, confirma la dirección y después inicia sesión.");toast("Te enviamos la confirmación por correo 💌");});return;}
       saveSignedInUser(access,user);
-      runOnUiThread(()->{refresh();if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
+      runOnUiThread(()->{buildUI();showTab(4);if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
     }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo completar: "+msg);});}}).start();
   }
   String authError(String response){try{JSONObject e=new JSONObject(response);return e.optString("msg",e.optString("message",e.optString("error_description",response)));}catch(Exception ex){return response;}}
