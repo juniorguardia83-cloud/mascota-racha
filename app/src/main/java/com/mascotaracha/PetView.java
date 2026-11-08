@@ -22,7 +22,7 @@ public class PetView extends View {
   private void oval(Canvas c,float l,float t,float r,float b,int color){fill(c,color);c.drawOval(new RectF(l,t,r,b),p);}
   private void round(Canvas c,float l,float t,float r,float b,float radius,int color){fill(c,color);c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);}
   private void line(Canvas c,float x1,float y1,float x2,float y2,int color,float width){p.setColor(color);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(width);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);}
-  private void text(Canvas c,String value,float x,float y,int size,int color){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-rounded",Typeface.BOLD));p.setTextAlign(Paint.Align.CENTER);c.drawText(value,x,y,p);}
+  private void text(Canvas c,String value,float x,float y,float size,int color){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-rounded",Typeface.BOLD));p.setTextAlign(Paint.Align.CENTER);c.drawText(value,x,y,p);}
   private int fur(){return animal.equals("Pandita")?0xFF33323B:animal.equals("Gatito")?0xFFFFD4D9:animal.equals("Conejito")?0xFFF2E6D6:animal.equals("Zorrito")?0xFFFFA66D:animal.equals("Osito")?0xFFB98769:0xFFD99C70;}
   private void drawRoom(Canvas c,float w,float h){
     int bg=room==1?0xFFFFEAF1:room==2?0xFFEAF1FF:room==3?0xFFE1F8F2:room==4?0xFFFFEFD8:room==5?0xFFF8F8F2:0xFFFFF2D9;
