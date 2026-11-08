@@ -16,7 +16,7 @@ import java.util.*;
 public class MainActivity extends Activity {
   static final String URL="https://prbxumnozkapgnbhxkby.supabase.co";
   static final String KEY="sb_publishable_7xZa_3v3AYsRiyGMi0Mp9A_xj39SXjS";
-  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar; ImageView profilePhoto;
+  SharedPreferences prefs; JSONObject state; TextView status,stats,missionText,walletText; PetView petView; EditText emailInput,passwordInput; CheckBox termsCheck; ProgressBar weekBar; ImageView profilePhoto;
   String[] missions={"🍎 Dale su comida favorita","💧 Llena su recipiente de agua","🎾 Juega con tu mascota","💗 Acaríciala con cariño","🧼 Limpia su casita","🎵 Hazla bailar un ratito"};
   String[] clothes={"🎀 Lazo rosa","👑 Corona real","🕶️ Gafas cool","🧣 Bufanda suave","🌸 Flor","⭐ Diadema estrella","🦋 Alas mágicas","💎 Collar brillante","🐝 Disfraz abeja","🧢 Gorra urbana","💗 Moño corazón","🌈 Capa arcoíris"};
   int[] prices={20,30,40,50,35,45,70,60,55,40,65,80};
@@ -76,6 +76,10 @@ public class MainActivity extends Activity {
     String[] names={"Perrito 🐶","Gatito 🐱","Conejito 🐰","Pandita 🐼"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
     for(int i=0;i<keys.length;i++){final String chosen=keys[i];Button b=btn(names[i]+"  ·  Elegir huevo");root.addView(b);b.setOnClickListener(v->{try{state.put("egg_pet",chosen);state.put("egg_started",System.currentTimeMillis());state.put("pet_selected",true);state.put("egg_hatched",false);state.put("coins",state.optInt("coins",0)+100);state.put("gems",state.optInt("gems",0));}catch(Exception ignored){}save();eggPage();});}
   }
+  void adoptAnotherPet(){
+    String[] names={"Perrito 🐶","Gatito 🐱","Conejito 🐰","Pandita 🐼"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
+    new AlertDialog.Builder(this).setTitle("Elige un nuevo huevo 🥚").setItems(names,(d,w)->{try{state.put("egg_pet",keys[w]);state.put("egg_started",System.currentTimeMillis());state.put("egg_hatched",false);}catch(Exception ignored){}save();eggPage();}).setNegativeButton("Cancelar",null).show();
+  }
   void eggPage(){
     root.removeAllViews();header("¡Tu huevo está incubándose! 🥚");
     LinearLayout card=card(0xFFFFEBC8);card.setOrientation(1);card.setGravity(Gravity.CENTER);card.setPadding(dp(18),dp(24),dp(18),dp(24));root.addView(card);
@@ -90,7 +94,7 @@ public class MainActivity extends Activity {
   void header(String subtitle){
     LinearLayout h=new LinearLayout(this);h.setGravity(Gravity.CENTER_VERTICAL);
     TextView brand=txt("🐾 MimoPets",25,true);brand.setTextColor(0xFF47794B);h.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
-    TextView coin=txt("🪙 "+num("coins")+"     💎 "+num("gems"),16,true);coin.setTextColor(0xFF9A7541);coin.setGravity(Gravity.RIGHT);h.addView(coin);root.addView(h);
+    walletText=txt("🪙 "+num("coins")+"     💎 "+num("gems"),16,true);walletText.setTextColor(0xFF9A7541);walletText.setGravity(Gravity.RIGHT);h.addView(walletText);root.addView(h);
     TextView sub=txt(subtitle,13,false);sub.setTextColor(0xFF789078);root.addView(sub);
   }
   void showTab(int tab){
@@ -104,7 +108,7 @@ public class MainActivity extends Activity {
     showTabContent(tab);
   }
   void showTabContent(int tab){
-    root.removeAllViews();status=null;stats=null;missionText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
+    root.removeAllViews();status=null;stats=null;missionText=null;walletText=null;petView=null;weekBar=null;inventoryBox=null;shopBox=null;roomBox=null;
     if(tab==0&&!state.optBoolean("pet_selected",false))chooseStarterPage();else if(tab==0&&!state.optBoolean("egg_hatched",false)&&state.optLong("egg_started",0)>0)eggPage();else if(tab==0)homePage();else if(tab==1)petsPage();else if(tab==2)housePage();else if(tab==3)shopPage();else profilePage();
     pageScroll.post(()->pageScroll.scrollTo(0,0));
   }
@@ -113,6 +117,7 @@ public class MainActivity extends Activity {
     LinearLayout welcome=card(0xFFE5F5DE);welcome.setOrientation(1);welcome.setPadding(dp(12),dp(8),dp(12),dp(8));root.addView(welcome);
     welcome.addView(txt("¡Hola, "+prefs.getString("profile_name","amig@")+"! 🐾",21,true));
     welcome.addView(txt("Cuida a tus mascotas y crea recuerdos cada día.",13,false));
+    TextView moodLine=txt("Hoy te sientes: "+state.optString("mood","Feliz 😄")+"  ·  Toca para cambiar",13,true);moodLine.setTextColor(0xFFB45D8B);welcome.addView(moodLine);moodLine.setOnClickListener(v->moodDialog());
     LinearLayout row1=new LinearLayout(this);row1.setOrientation(0);row1.setGravity(Gravity.CENTER);root.addView(row1);
     row1.addView(dashCard("Mascotas","Cuida y juega con ellas","🐱",0xFFFFE5B2,1),new LinearLayout.LayoutParams(0,dp(158),1));
     row1.addView(dashCard("Rastreador","Misiones y actividades","🎯",0xFFFFDDE8,1),new LinearLayout.LayoutParams(0,dp(158),1));
@@ -150,6 +155,7 @@ public class MainActivity extends Activity {
     for(int i=0;i<names.length;i++){final String k=keys[i];Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));root.addView(b);b.setOnClickListener(v->{put("pet",k);showTab(1);});}
     section("💗 ¿Cómo te sientes hoy?");
     Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
+    Button adopt=btn("🥚 Adoptar otra mascota · Huevo de 3 horas");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
     section("💗 Cuidados diarios");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
     String[] labels={"🍎 Dar comida","🎾 Jugar","🛁 Bañar","🌙 Descansar"};String[] keys2={"food","fun","clean","energy"};
@@ -215,6 +221,7 @@ public class MainActivity extends Activity {
   Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextColor(0xFF47794B);b.setTextSize(13);b.setAllCaps(false);b.setPadding(dp(4),dp(2),dp(4),dp(2));b.setBackground(round(0xFFE5F2DE,dp(16)));b.setOnTouchListener((view,event)->{if(event.getAction()==android.view.MotionEvent.ACTION_DOWN)view.animate().scaleX(.96f).scaleY(.96f).setDuration(80).start();else if(event.getAction()==android.view.MotionEvent.ACTION_UP||event.getAction()==android.view.MotionEvent.ACTION_CANCEL)view.animate().scaleX(1f).scaleY(1f).setDuration(120).start();return false;});return b;}
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
   void refresh(){
+    if(walletText!=null)walletText.setText("🪙 "+num("coins")+"     💎 "+num("gems"));
     if(stats!=null)stats.setText("🔥 "+num("streak")+" días     🪙 "+num("coins")+" monedas    ❤️ "+state.optInt("fun",75)+"%");
     if(missionText!=null)missionText.setText("Hoy: "+missions[missionIndex]);
     if(weekBar!=null)weekBar.setProgress(num("weekProgress"));
