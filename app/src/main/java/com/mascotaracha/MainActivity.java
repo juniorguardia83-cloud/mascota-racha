@@ -150,10 +150,12 @@ public class MainActivity extends Activity {
     section("Elige a tu mascota");
     String[] names={"🐶 Perrito","🐱 Gatito","🐰 Conejito","🐼 Pandita"};String[] keys={"Perrito","Gatito","Conejito","Pandita"};
     JSONArray pets=state.optJSONArray("pets");if(pets==null){pets=new JSONArray();pets.put(pet());try{state.put("pets",pets);}catch(Exception ignored){}save();}
-    for(int i=0;i<names.length;i++){final String k=keys[i];boolean owned=false;for(int j=0;j<pets.length();j++)if(k.equals(pets.optString(j)))owned=true;Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));b.setEnabled(owned);root.addView(b);b.setOnClickListener(v->{if(owned){put("pet",k);showTab(1);}else toast("Esta mascota aún no está desbloqueada 🥚");});}
+    for(int i=0;i<names.length;i++){final String k=keys[i];boolean found=false;for(int j=0;j<pets.length();j++)if(k.equals(pets.optString(j)))found=true;final boolean owned=found;Button b=btn(names[i]+(pet().equals(k)?"  ✓":""));b.setEnabled(owned);root.addView(b);b.setOnClickListener(v->{if(owned){put("pet",k);showTab(1);}else toast("Esta mascota aún no está desbloqueada 🥚");});}
     section("💗 ¿Cómo te sientes hoy?");
     Button mood=btn("😊 Estado: "+state.optString("mood","Feliz")+"  ·  Cambiar");root.addView(mood);mood.setOnClickListener(v->moodDialog());
-    TextView petCollectionNote=txt("Tu compañero está contigo 💗. No se iniciará otro huevo mientras esta mascota esté activa, así no se pierde el progreso.",13,false);root.addView(petCollectionNote);
+    TextView petCollectionNote=txt("Tu compañero actual seguirá contigo mientras incubas y adoptas otra mascota. 💗",13,false);root.addView(petCollectionNote);
+    if(state.optLong("egg_started",0)>0&&!state.optBoolean("egg_hatched",true))incubatorCard();
+    Button adopt=btn("🥚 Adoptar otra mascota · Huevo de 3 horas");root.addView(adopt);adopt.setOnClickListener(v->adoptAnotherPet());
     section("💗 Cuidados diarios");
     petView=new PetView(this);petView.setPet(pet());petView.setRoom(state.optInt("room",0));petView.setOutfit(state.optInt("outfit",-1));root.addView(petView,new LinearLayout.LayoutParams(-1,dp(230)));
     String[] labels={"🍎 Dar comida","🎾 Jugar","🛁 Bañar","🌙 Descansar"};String[] keys2={"food","fun","clean","energy"};
@@ -161,6 +163,7 @@ public class MainActivity extends Activity {
     section("Estado de tu mascota");
     String[] meters={"food","fun","clean","energy"};String[] meterLabels={"Hambre","Diversión","Higiene","Energía"};
     for(int i=0;i<meters.length;i++){TextView t=txt(meterLabels[i]+"  ·  "+state.optInt(meters[i],70)+"%",14,true);root.addView(t);ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(100);p.setProgress(state.optInt(meters[i],70));root.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
+    section("🎮 Tiempo de jugar");Button games=btn("Jugar minijuegos y ganar monedas");root.addView(games);games.setOnClickListener(v->gamesPage());
     section("✨ Crecimiento");int xp=num("xp"),level=Math.max(1,num("level"));root.addView(txt("Nivel "+level+"  ·  "+xp+"/100 XP",16,true));
     ProgressBar xpbar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);xpbar.setMax(100);xpbar.setProgress(xp%100);root.addView(xpbar,new LinearLayout.LayoutParams(-1,dp(12)));
   }
