@@ -181,7 +181,7 @@ public class MainActivity extends Activity {
     header("Compra cositas con tus monedas 🛍️");
     LinearLayout wallet=card(0xFFFFF0D5);wallet.setPadding(dp(12),dp(6),dp(12),dp(6));wallet.addView(txt("Tu saldo: "+num("coins")+" 🪙",17,true));root.addView(wallet);
     section("✨ Accesorios para tu mascota");
-    for(int i=0;i<clothes.length;i++){final int ix=i;Button b=btn(clothes[i]+"   ·   "+prices[i]+" 🪙");root.addView(b);b.setOnClickListener(v->buy(ix));}
+    for(int i=0;i<clothes.length;i++){final int ix=i;LinearLayout item=card(0xFFFFEBDD);item.setOrientation(1);item.setPadding(dp(8),dp(6),dp(8),dp(8));TextView name=txt(clothes[i],15,true);name.setGravity(Gravity.CENTER);item.addView(name);PetView preview=new PetView(this);preview.setPet(pet());preview.setOutfit(ix);preview.setRoom(1);item.addView(preview,new LinearLayout.LayoutParams(-1,dp(132)));Button b=btn("Comprar · "+prices[i]+" 🪙");item.addView(b);root.addView(item);b.setOnClickListener(v->buy(ix));}
     section("🎒 Mi armario");inventoryBox=new LinearLayout(this);inventoryBox.setOrientation(1);root.addView(inventoryBox);refresh();
   }
   void profilePage(){
@@ -289,7 +289,7 @@ public class MainActivity extends Activity {
       }
       if(access.length()==0||user==null)throw new Exception("No se recibió una sesión válida. Comprueba tus datos.");
       saveSignedInUser(access,user);
-      runOnUiThread(()->{buildUI();showTab(4);if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
+      runOnUiThread(()->{buildUI();showTab(0);if(status!=null)status.setText("Sesión iniciada. Cuenta vinculada.");toast("¡Bienvenido! ❤️");});
     }catch(Exception e){String msg=e.getMessage()==null?"Error de conexión":e.getMessage();runOnUiThread(()->{if(status!=null)status.setText("No se pudo completar: "+msg);});}}).start();
   }
   void showOtpDialog(String email){
@@ -313,7 +313,7 @@ public class MainActivity extends Activity {
     new Thread(()->{try{JSONObject body=new JSONObject();body.put("type","signup");body.put("email",email);body.put("token",otp);
       HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/verify").openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(20000);c.setReadTimeout(20000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
       int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");if(access.isEmpty()||user==null)throw new Exception("El código no generó una sesión. Intenta iniciar sesión.");
-      saveSignedInUser(access,user);runOnUiThread(()->{dialog.dismiss();buildUI();showTab(4);toast("¡Correo confirmado! Bienvenido a MimoPets 💚");});
+      saveSignedInUser(access,user);runOnUiThread(()->{dialog.dismiss();buildUI();showTab(0);toast("¡Correo confirmado! Bienvenido a MimoPets 💚");});
     }catch(Exception e){runOnUiThread(()->toast("Código no válido o vencido: "+e.getMessage()));}}).start();
   }
   String authError(String response){try{JSONObject e=new JSONObject(response);return e.optString("msg",e.optString("message",e.optString("error_description",response)));}catch(Exception ex){return response;}}
@@ -351,7 +351,7 @@ public class MainActivity extends Activity {
     if(token==null){String error=data.getQueryParameter("error_description");if(error!=null)runOnUiThread(()->toast("Google no pudo completar el acceso: "+error));return;}
     final String access=token;
     if("recovery".equals(type)){prefs.edit().putString("recovery_token",access).apply();runOnUiThread(()->newPasswordDialog(access));return;}
-    new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);int code=c.getResponseCode();if(code<200||code>=300)throw new Exception(readResponse(c));JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{buildUI();showTab(4);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta: "+e.getMessage()));}}).start();
+    new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(URL+"/auth/v1/user").openConnection();c.setRequestProperty("apikey",KEY);c.setRequestProperty("Authorization","Bearer "+access);int code=c.getResponseCode();if(code<200||code>=300)throw new Exception(readResponse(c));JSONObject user=new JSONObject(readResponse(c));saveSignedInUser(access,user);runOnUiThread(()->{buildUI();showTab(0);if(status!=null)status.setText("Sesión iniciada con éxito.");toast("¡Hola! 💚");});}catch(Exception e){runOnUiThread(()->toast("No se pudo validar la cuenta: "+e.getMessage()));}}).start();
   }
   @Override public void onBackPressed(){if(!prefs.getBoolean("signed_in",false)){super.onBackPressed();return;}showTab(0);}
   void newPasswordDialog(String access){
