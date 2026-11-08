@@ -167,7 +167,7 @@ public class MainActivity extends Activity {
     if(status!=null)status.setText(mode.equals("signup")?"Creando tu cuenta…":"Iniciando sesión…");
     new Thread(()->{try{
       JSONObject body=new JSONObject();body.put("email",email);body.put("password",password);
-      String endpoint=mode.equals("signup")?"/auth/v1/signup":"/auth/v1/token?grant_type=password";
+      String endpoint=mode.equals("signup")?"/auth/v1/signup?redirect_to=mimopets://auth-callback":"/auth/v1/token?grant_type=password";
       HttpURLConnection c=(HttpURLConnection)new URL(URL+endpoint).openConnection();c.setRequestMethod("POST");c.setDoOutput(true);c.setConnectTimeout(20000);c.setReadTimeout(20000);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(body.toString().getBytes("UTF-8"));
       int code=c.getResponseCode();String response=readResponse(c);if(code<200||code>=300)throw new Exception(authError(response));
       JSONObject result=new JSONObject(response);String access=result.optString("access_token","");JSONObject user=result.optJSONObject("user");
