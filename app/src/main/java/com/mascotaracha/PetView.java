@@ -16,6 +16,7 @@ public class PetView extends View {
   public void setRoom(int value){room=value;invalidate();}
   public void pet(){started=System.currentTimeMillis();reactionUntil=started+1500;invalidate();}
   public void sit(){sitUntil=System.currentTimeMillis()+2600;pet();}
+  private float dp(float value){return value*getResources().getDisplayMetrics().density;}
   private void fill(Canvas c,int color){p.setColor(color);p.setStyle(Paint.Style.FILL);p.setStrokeWidth(1);}
   private void circle(Canvas c,float x,float y,float r,int color){fill(c,color);c.drawCircle(x,y,r,p);}
   private void oval(Canvas c,float l,float t,float r,float b,int color){fill(c,color);c.drawOval(new RectF(l,t,r,b),p);}
